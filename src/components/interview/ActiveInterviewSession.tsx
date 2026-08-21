@@ -1,58 +1,95 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Question, InterviewConfig, UserResponse } from '@/types/interview';
 import { FiClock, FiEye, FiArrowRight, FiArrowLeft, FiCheck } from 'react-icons/fi';
 
 interface ActiveInterviewSessionProps {
   questions: Question[];
-  config: InterviewConfig;
+  // config: InterviewConfig;
   onComplete: (responses: UserResponse[]) => void;
 }
 
 export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
   questions,
-  config,
+  // config,
   onComplete,
 }) => {
-  const TIMER_LIMIT = 60; // 60s per question standard
+  const TIMER_LIMIT = 60;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState<number>(TIMER_LIMIT);
   const [showExplanation, setShowExplanation] = useState(false);
   
-  // Track selected options per question index
   const [selectedAnswers, setSelectedAnswers] = useState<(number | null)[]>(
     new Array(questions.length).fill(null)
   );
+  const [timeSpent, setTimeSpent] = useState<number[]>(
+    new Array(questions.length).fill(0)
+  );
 
+  const autoAdvanceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const currentQuestion = questions[currentIndex];
   const progressPercent = Math.round(((currentIndex + 1) / questions.length) * 100);
 
-  // Timer logic - resets to 60s per question
+  const finishInterview = useCallback(() => {
+    const finalResponses: UserResponse[] = questions.map((q, idx) => {
+      const selected = selectedAnswers[idx];
+      return {
+        questionId: q.id,
+        selectedOptionIndex: selected,
+        isCorrect: selected === q.correctOptionIndex,
+        timeSpentSeconds: timeSpent[idx] || (TIMER_LIMIT - timeLeft),
+      };
+    });
+    onComplete(finalResponses);
+  }, [questions, selectedAnswers, timeSpent, timeLeft, onComplete]);
+
+  const handleNextQuestion = useCallback(() => {
+    setShowExplanation(false);
+    if (currentIndex + 1 < questions.length) {
+      setCurrentIndex((prev) => prev + 1);
+    } else {
+      finishInterview();
+    }
+  }, [currentIndex, questions.length, finishInterview]);
+
+  // Main countdown timer logic
   useEffect(() => {
     setTimeLeft(TIMER_LIMIT);
     const interval = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          handleNextQuestion();
-          return TIMER_LIMIT;
-        }
-        return prev - 1;
-      });
+      setTimeLeft((prev) => prev - 1);
     }, 1000);
 
     return () => clearInterval(interval);
   }, [currentIndex]);
 
-  // Handle option select with automatic advance
+  // Handle timer expiration safely without side-effects in render/state updaters
+  useEffect(() => {
+    if (timeLeft <= 0) {
+      handleNextQuestion();
+    }
+  }, [timeLeft, handleNextQuestion]);
+
+  // Cleanup pending timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+    };
+  }, []);
+
   const handleSelectOption = (index: number) => {
     const updatedAnswers = [...selectedAnswers];
     updatedAnswers[currentIndex] = index;
     setSelectedAnswers(updatedAnswers);
 
-    // Auto advance to next question after subtle feedback pause (250ms)
-    setTimeout(() => {
+    const updatedTimeSpent = [...timeSpent];
+    updatedTimeSpent[currentIndex] = TIMER_LIMIT - timeLeft;
+    setTimeSpent(updatedTimeSpent);
+
+    if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+
+    autoAdvanceTimerRef.current = setTimeout(() => {
       if (currentIndex + 1 < questions.length) {
         setShowExplanation(false);
         setCurrentIndex((prev) => prev + 1);
@@ -67,34 +104,11 @@ export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
     }
   };
 
-  const handleNextQuestion = () => {
-    setShowExplanation(false);
-    if (currentIndex + 1 < questions.length) {
-      setCurrentIndex((prev) => prev + 1);
-    } else {
-      finishInterview();
-    }
-  };
-
-  const finishInterview = () => {
-    const finalResponses: UserResponse[] = questions.map((q, idx) => {
-      const selected = selectedAnswers[idx];
-      return {
-        questionId: q.id,
-        selectedOptionIndex: selected,
-        isCorrect: selected === q.correctOptionIndex,
-        timeSpentSeconds: TIMER_LIMIT - timeLeft,
-      };
-    });
-    onComplete(finalResponses);
-  };
-
   const currentSelectedOption = selectedAnswers[currentIndex];
 
   return (
     <div className="font-['Lato',sans-serif] max-w-3xl mx-auto space-y-5 pb-10">
-      
-      {/* Category Progression Bar & Timers */}
+      {/* Category & Timer Header */}
       <div className="bg-white border border-[#0F172A]/10 rounded-2xl p-4 sm:p-5 flex items-center justify-between gap-4 shadow-sm">
         <div>
           <span className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-[#00A651]/10 text-[#00863F] text-xs font-bold border border-[#00A651]/20">
@@ -105,10 +119,9 @@ export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
           </p>
         </div>
 
-        {/* 60s Question Timer */}
         <div className="flex items-center gap-2 bg-[#F8F9FA] border border-[#0F172A]/10 px-3.5 py-1.5 rounded-xl text-[#0A0F1C] font-mono font-bold text-sm">
           <FiClock className={`w-4 h-4 ${timeLeft <= 10 ? 'text-red-500 animate-bounce' : 'text-[#00A651]'}`} />
-          <span>00:{String(timeLeft).padStart(2, '0')}</span>
+          <span>00:{String(Math.max(0, timeLeft)).padStart(2, '0')}</span>
         </div>
       </div>
 
@@ -126,7 +139,7 @@ export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
           {currentQuestion.questionText}
         </h3>
 
-        {/* Options List */}
+        {/* Options */}
         <div className="space-y-2.5">
           {currentQuestion.options.map((optText, idx) => {
             const isSelected = currentSelectedOption === idx;
@@ -178,7 +191,7 @@ export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
           )}
         </div>
 
-        {/* Dynamic Prev / Next Controls */}
+        {/* Navigation Controls */}
         <div className="flex items-center justify-between gap-3 pt-2">
           <button
             type="button"
@@ -215,7 +228,6 @@ export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
         </div>
       </div>
 
-      {/* Powered by Attribution */}
       <div className="text-center pt-2">
         <span className="text-[11px] text-[#64748B] font-medium">
           Powered by <strong className="text-[#00A651]">Maekandex Academy</strong>

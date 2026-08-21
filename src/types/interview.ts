@@ -1,12 +1,13 @@
-export type JobRole = 
-  | 'frontend' 
-  | 'backend' 
-  | 'fullstack' 
-  | 'devops' 
-  | 'mobile' 
-  | 'data-science' 
-  | 'ui-ux' 
-  | 'product-management';
+export type JobRole =
+  // | 'frontend'
+  // | 'backend'
+  // | 'fullstack'
+  // | 'devops'
+  // | 'mobile'
+  // | 'data-science'
+  // | 'ui-ux'
+  // | 'product-management'
+     'product';
 
 export type DifficultyLevel = 'easy' | 'medium';
 
@@ -24,7 +25,7 @@ export interface Question {
 export interface InterviewConfig {
   jobRole: JobRole;
   difficulty: DifficultyLevel;
-  questionCount: number; // Min 5, Max 25
+  questionCount: number;
 }
 
 export interface UserResponse {
