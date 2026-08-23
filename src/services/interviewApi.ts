@@ -1,5 +1,4 @@
-import { API_BASE_URL } from '@/lib/config';
-import { Question, JobRole, DifficultyLevel } from '@/types/interview';
+import { Question, JobRole } from '@/types/interview';
 
 interface ApiQuestionItem {
   question: string;
@@ -13,29 +12,30 @@ interface ApiResponse {
 }
 
 const VALID_JOB_ROLES: JobRole[] = [
-//   'frontend',
-//   'backend',
-//   'fullstack',
-//   'devops',
-//   'mobile',
-//   'data-science',
-//   'ui-ux',
-//   'product-management',
-'product'
+  'entry',
+  'data',
+  'digital_market',
+  'frontend',
+  'backend',
+  'sales',
+  'AI',
+  'finance',
+  'leadership',
+  'product',
 ];
 
 export async function fetchQuestionsFromApi(
   category: JobRole | string,
-  number: number,
-  difficulty: DifficultyLevel = 'medium'
+  number: number
 ): Promise<Question[]> {
   try {
-    const url = `${API_BASE_URL}/api/maekandex/academy?category=${encodeURIComponent(category)}&number=${number}`;
+    // Route to local Next.js proxy handler
+    const url = `/api/interview?category=${encodeURIComponent(category)}&number=${number}`;
 
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'Accept': 'application/json',
+        Accept: 'application/json',
       },
       cache: 'no-store',
     });
@@ -51,7 +51,6 @@ export async function fetchQuestionsFromApi(
       throw new Error('Invalid response structure: "questions" array was not returned.');
     }
 
-    // Safely cast or fallback to 'fullstack' if category string is non-standard
     const assignedJobRole: JobRole = VALID_JOB_ROLES.includes(category as JobRole)
       ? (category as JobRole)
       : 'product';
@@ -63,8 +62,6 @@ export async function fetchQuestionsFromApi(
       correctOptionIndex: typeof item.answer === 'number' ? item.answer : 0,
       category: String(category),
       jobRole: assignedJobRole,
-      difficulty,
-      explanation: 'Review the correct option and concept breakdown.',
     }));
   } catch (error) {
     console.error('Error fetching questions:', error);

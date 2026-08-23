@@ -7,25 +7,25 @@ import { FiClock, FiEye, FiArrowRight, FiArrowLeft, FiCheck } from 'react-icons/
 
 interface ActiveInterviewSessionProps {
   questions: Question[];
-  // config: InterviewConfig;
+  config: InterviewConfig;
   onComplete: (responses: UserResponse[]) => void;
 }
 
+const TIMER_LIMIT = 60;
+
 export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
   questions,
-  // config,
   onComplete,
 }) => {
-  const TIMER_LIMIT = 60;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState<number>(TIMER_LIMIT);
-  const [showExplanation, setShowExplanation] = useState(false);
-  
+  // const [showExplanation, setShowExplanation] = useState(false);
+
   const [selectedAnswers, setSelectedAnswers] = useState<(number | null)[]>(
-    new Array(questions.length).fill(null)
+    () => new Array(questions.length).fill(null)
   );
   const [timeSpent, setTimeSpent] = useState<number[]>(
-    new Array(questions.length).fill(0)
+    () => new Array(questions.length).fill(0)
   );
 
   const autoAdvanceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -39,14 +39,14 @@ export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
         questionId: q.id,
         selectedOptionIndex: selected,
         isCorrect: selected === q.correctOptionIndex,
-        timeSpentSeconds: timeSpent[idx] || (TIMER_LIMIT - timeLeft),
+        timeSpentSeconds: timeSpent[idx] || TIMER_LIMIT,
       };
     });
     onComplete(finalResponses);
-  }, [questions, selectedAnswers, timeSpent, timeLeft, onComplete]);
+  }, [questions, selectedAnswers, timeSpent, onComplete]);
 
   const handleNextQuestion = useCallback(() => {
-    setShowExplanation(false);
+    // setShowExplanation(false);
     if (currentIndex + 1 < questions.length) {
       setCurrentIndex((prev) => prev + 1);
     } else {
@@ -54,24 +54,27 @@ export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
     }
   }, [currentIndex, questions.length, finishInterview]);
 
-  // Main countdown timer logic
   useEffect(() => {
     setTimeLeft(TIMER_LIMIT);
     const interval = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
 
     return () => clearInterval(interval);
   }, [currentIndex]);
 
-  // Handle timer expiration safely without side-effects in render/state updaters
   useEffect(() => {
-    if (timeLeft <= 0) {
+    if (timeLeft === 0) {
       handleNextQuestion();
     }
   }, [timeLeft, handleNextQuestion]);
 
-  // Cleanup pending timeouts on unmount
   useEffect(() => {
     return () => {
       if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
@@ -90,8 +93,8 @@ export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
     if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
 
     autoAdvanceTimerRef.current = setTimeout(() => {
+      // setShowExplanation(false);
       if (currentIndex + 1 < questions.length) {
-        setShowExplanation(false);
         setCurrentIndex((prev) => prev + 1);
       }
     }, 250);
@@ -99,7 +102,8 @@ export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
 
   const handlePrevQuestion = () => {
     if (currentIndex > 0) {
-      setShowExplanation(false);
+      if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+      // setShowExplanation(false);
       setCurrentIndex((prev) => prev - 1);
     }
   };
@@ -108,11 +112,10 @@ export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
 
   return (
     <div className="font-['Lato',sans-serif] max-w-3xl mx-auto space-y-5 pb-10">
-      {/* Category & Timer Header */}
       <div className="bg-white border border-[#0F172A]/10 rounded-2xl p-4 sm:p-5 flex items-center justify-between gap-4 shadow-sm">
         <div>
           <span className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-[#00A651]/10 text-[#00863F] text-xs font-bold border border-[#00A651]/20">
-            {currentQuestion.category}
+            {currentQuestion?.category || 'General'}
           </span>
           <p className="text-xs text-[#64748B] mt-1.5 font-medium">
             Question <span className="text-[#0A0F1C] font-bold">{currentIndex + 1}</span> of {questions.length}
@@ -125,7 +128,6 @@ export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
         </div>
       </div>
 
-      {/* Progress Bar */}
       <div className="w-full bg-[#E8E6E1] h-2 rounded-full overflow-hidden">
         <div
           className="bg-[#00A651] h-full transition-all duration-300"
@@ -133,15 +135,13 @@ export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
         />
       </div>
 
-      {/* Question Card */}
       <div className="bg-white border border-[#0F172A]/10 rounded-3xl p-5 sm:p-8 space-y-6 shadow-sm">
         <h3 className="text-base sm:text-lg font-bold text-[#0A0F1C] leading-snug">
-          {currentQuestion.questionText}
+          {currentQuestion?.questionText}
         </h3>
 
-        {/* Options */}
         <div className="space-y-2.5">
-          {currentQuestion.options.map((optText, idx) => {
+          {currentQuestion?.options.map((optText, idx) => {
             const isSelected = currentSelectedOption === idx;
             return (
               <button
@@ -172,8 +172,7 @@ export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
           })}
         </div>
 
-        {/* Concept Explanation Toggle */}
-        <div className="border-t border-[#0F172A]/10 pt-4">
+        {/* <div className="border-t border-[#0F172A]/10 pt-4">
           <button
             type="button"
             onClick={() => setShowExplanation(!showExplanation)}
@@ -186,12 +185,11 @@ export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
           {showExplanation && (
             <div className="mt-3 p-3.5 bg-[#F8F9FA] rounded-2xl border border-[#0F172A]/10 text-xs text-[#1E293B] leading-relaxed">
               <strong className="text-[#0A0F1C] block mb-1">Explanation:</strong>
-              {currentQuestion.explanation}
+              {currentQuestion?.explanation}
             </div>
           )}
-        </div>
+        </div> */}
 
-        {/* Navigation Controls */}
         <div className="flex items-center justify-between gap-3 pt-2">
           <button
             type="button"

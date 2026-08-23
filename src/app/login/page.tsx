@@ -67,7 +67,7 @@ function PhoneInput({
           ))}
         </div>
       )}
-      <div className="jj-login-field__input-wrap">
+      <div className=" jj-login-field__input-wrap">
         <FiPhone size={15} className="jj-login-field__icon" />
         <input
           type="tel"
@@ -75,7 +75,7 @@ function PhoneInput({
           onChange={(e) => onChange(e.target.value.replace(/\D/g, ""))}
           placeholder="806 000 0000"
           maxLength={11}
-          className="jj-login-field__input"
+          className="!text-gray-800 jj-login-field__input"
         />
       </div>
     </div>
@@ -107,7 +107,7 @@ function PinInput({
           onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, PIN_LENGTH))}
           placeholder={placeholder}
           maxLength={PIN_LENGTH}
-          className="jj-login-field__input jj-login-field__input--pin"
+          className="!text-gray-800 jj-login-field__input jj-login-field__input--pin"
           autoComplete="one-time-code"
         />
         <button

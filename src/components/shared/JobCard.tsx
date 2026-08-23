@@ -78,7 +78,7 @@ export default function JobCard({ job, variant = "list" }: JobCardProps) {
             <div className="jj-job-card__info min-w-0 flex-1">
               <Link
                 href={`/jobs/${job.job_id}`}
-                className="jj-job-card__title font-bold text-gray-900 hover:text-[#00A651] text-base line-clamp-2 transition-colors"
+                className="jj-job-card__title font-bold !text-[#00A651] text-base line-clamp-2 transition-colors"
               >
                 {title}
               </Link>
@@ -122,7 +122,7 @@ export default function JobCard({ job, variant = "list" }: JobCardProps) {
         <div className="sm:hidden flex-1 min-w-0">
           <Link
             href={`/jobs/${job.job_id}`}
-            className="jj-job-card__title font-bold text-gray-900 hover:text-[#00A651] text-base line-clamp-2"
+            className="jj-job-card__title font-bold !text-[#00A651] text-base line-clamp-2"
           >
             {title}
           </Link>
@@ -133,7 +133,7 @@ export default function JobCard({ job, variant = "list" }: JobCardProps) {
       <div className="jj-job-card__body flex-1 min-w-0 w-full">
         <Link
           href={`/jobs/${job.job_id}`}
-          className="jj-job-card__title jj-job-card__title--lg hidden sm:block font-bold text-gray-900 hover:text-[#00A651] text-lg transition-colors"
+          className="jj-job-card__title jj-job-card__title--lg hidden sm:block font-bold !text-[#00A651] text-lg transition-colors"
         >
           {title}
         </Link>

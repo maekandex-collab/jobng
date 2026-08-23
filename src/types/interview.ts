@@ -1,30 +1,31 @@
 export type JobRole =
-  // | 'frontend'
-  // | 'backend'
-  // | 'fullstack'
-  // | 'devops'
-  // | 'mobile'
-  // | 'data-science'
-  // | 'ui-ux'
-  // | 'product-management'
-     'product';
+  | 'frontend'
+  | 'backend'
+  | 'AI'
+  | 'data'
+  | 'digital_market'
+  | 'sales'
+  | 'finance'
+  | 'leadership'
+  | 'entry'
+  | 'product';
 
-export type DifficultyLevel = 'easy' | 'medium';
+// export type DifficultyLevel = 'easy' | 'medium';
 
 export interface Question {
   id: string;
   category: string;
   jobRole: JobRole;
-  difficulty: DifficultyLevel;
+  // difficulty: DifficultyLevel;
   questionText: string;
   options: string[];
   correctOptionIndex: number;
-  explanation: string;
+  // explanation: string;
 }
 
 export interface InterviewConfig {
   jobRole: JobRole;
-  difficulty: DifficultyLevel;
+  // difficulty: DifficultyLevel;
   questionCount: number;
 }
 
