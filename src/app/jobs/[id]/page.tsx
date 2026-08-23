@@ -244,7 +244,7 @@ export default function JobDetailPage() {
               <div className="bg-(--surface-elevated) border border-(--border) rounded-(--radius-md) shadow-(--shadow-sm) p-6 sm:p-9 transition-all duration-200">
                 <div className="flex items-center gap-3 mb-6 pb-4 border-b border-(--border)">
                   <div className="w-1.5 h-6 bg-linear-to-b from-[#8DC63F] to-[#00A651] rounded-full" />
-                  <h2 className="text-lg font-extrabold text-(--ink) tracking-tight">Job Overview & Requirements</h2>
+                  <h2 className="text-lg font-extrabold text-[#41ee11] tracking-tight">Job Overview & Requirements</h2>
                 </div>
                 
                 <div
@@ -276,7 +276,7 @@ export default function JobDetailPage() {
               <p className="text-[11px] font-extrabold uppercase tracking-widest text-(--text-faint) mb-1">
                 Employer Details
               </p>
-              <h3 className="text-xl font-extrabold text-(--ink) tracking-tight mb-2">
+              <h3 className="text-xl font-extrabold text-[#00A651] tracking-tight mb-2">
                 {companyName}
               </h3>
 

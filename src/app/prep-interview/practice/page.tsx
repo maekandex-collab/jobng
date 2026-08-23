@@ -14,7 +14,6 @@ export default function InterviewPrepPracticePage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [responses, setResponses] = useState<UserResponse[] | null>(null);
 
-  // Loading & Error States
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,7 +22,7 @@ export default function InterviewPrepPracticePage() {
     setError(null);
 
     try {
-      const categoryParam = newConfig.jobRole || 'product-management';
+      const categoryParam = newConfig.jobRole || 'product';
       const fetchedQuestions = await fetchQuestionsFromApi(
         categoryParam,
         newConfig.questionCount
@@ -60,7 +59,6 @@ export default function InterviewPrepPracticePage() {
   return (
     <main className="font-['Lato',sans-serif] min-h-screen bg-[#F8F9FA] text-[#0A0F1C] py-8 sm:py-12 px-4 sm:px-6 lg:px-8 transition-all">
       <div className="max-w-6xl mx-auto">
-        {/* Error Notification Banner */}
         {error && (
           <div className="mb-6 p-4 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl text-xs font-semibold flex justify-between items-center">
             <span>{error}</span>
@@ -73,7 +71,6 @@ export default function InterviewPrepPracticePage() {
           </div>
         )}
 
-        {/* Loader Overlay */}
         {loading && (
           <div className="bg-white border border-[#0F172A]/10 rounded-3xl p-12 text-center space-y-4 shadow-sm max-w-lg mx-auto">
             <div className="w-10 h-10 border-4 border-[#00A651] border-t-transparent rounded-full animate-spin mx-auto" />
@@ -83,16 +80,14 @@ export default function InterviewPrepPracticePage() {
           </div>
         )}
 
-        {/* Step 1: Configuration Setup */}
         {!config && !loading && (
           <InterviewSetup onStartSession={handleStartSession} />
         )}
 
-        {/* Step 2: Active Test Session */}
         {config && questions.length > 0 && !responses && !loading && (
           <ActiveInterviewSession
             questions={questions}
-            // config={config}
+            config={config}
             onComplete={(finalResponses) => {
               setResponses(finalResponses);
               window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -100,7 +95,6 @@ export default function InterviewPrepPracticePage() {
           />
         )}
 
-        {/* Step 3: Results & Analytics */}
         {responses && !loading && (
           <InterviewResults
             responses={responses}
