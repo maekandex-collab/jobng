@@ -106,7 +106,7 @@ export default function JobCard({ job, variant = "list" }: JobCardProps) {
 
         <Link
           href={`/jobs/${job.job_id}`}
-          className="jj-job-card__cta inline-flex items-center justify-between w-full pt-3 border-t border-gray-100 text-sm font-semibold text-[#00A651] hover:text-[#00863F] transition-colors mt-auto"
+          className="jj-job-card__cta inline-flex items-center justify-between w-full pt-3 border-t border-gray-100 text-sm font-semibold !text-[#00A651] hover:text-[#00863F] transition-colors mt-auto"
         >
           <span>View Job</span>
           <FiArrowUpRight size={16} />

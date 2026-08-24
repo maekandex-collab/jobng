@@ -1,5 +1,16 @@
+import { authHeaders } from "./auth-client";
 import { API_BASE_URL } from "./config";
+import { Question, JobRole } from "@/types/interview";
 
+interface ApiQuestion {
+  question: string;
+  options: string[];
+  answer: number;
+}
+
+interface ProxyResponse {
+  questions: ApiQuestion[];
+}
 export interface Apijustjob {
   job_id: string;
   job_title: string | null;
@@ -52,10 +63,9 @@ export interface GetTotalJobsResponse {
   message?: string;
 }
 
-
 export function extractError(
   data: Record<string, unknown> | null | undefined | unknown,
-  fallback = "Something went wrong. Please try again."
+  fallback = "Something went wrong. Please try again.",
 ): string {
   if (!data || typeof data !== "object") return fallback;
 
@@ -70,7 +80,12 @@ export function extractError(
   if (Array.isArray(record.detail) && record.detail.length > 0) {
     const first = record.detail[0];
     if (typeof first === "string") return first;
-    if (typeof first === "object" && first !== null && "msg" in first && typeof first.msg === "string") {
+    if (
+      typeof first === "object" &&
+      first !== null &&
+      "msg" in first &&
+      typeof first.msg === "string"
+    ) {
       return first.msg;
     }
   }
@@ -137,10 +152,15 @@ export function extractToken(data: unknown): string | null {
  * Removes "Bearer " prefix and surrounding whitespace if present.
  */
 function sanitizeToken(token: string): string {
-  return token.trim().replace(/^Bearer\s+/i, "").trim();
+  return token
+    .trim()
+    .replace(/^Bearer\s+/i, "")
+    .trim();
 }
 
-async function parseJson<T = Record<string, unknown>>(res: Response): Promise<T> {
+async function parseJson<T = Record<string, unknown>>(
+  res: Response,
+): Promise<T> {
   const text = await res.text();
   try {
     const data = JSON.parse(text);
@@ -149,7 +169,9 @@ async function parseJson<T = Record<string, unknown>>(res: Response): Promise<T>
     }
     return data as T;
   } catch {
-    return { message: text || res.statusText || "An unexpected error occurred" } as unknown as T;
+    return {
+      message: text || res.statusText || "An unexpected error occurred",
+    } as unknown as T;
   }
 }
 
@@ -163,7 +185,11 @@ export async function registerUser(body: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  return { ok: res.ok, status: res.status, data: await parseJson<AuthSuccessData>(res) };
+  return {
+    ok: res.ok,
+    status: res.status,
+    data: await parseJson<AuthSuccessData>(res),
+  };
 }
 
 export async function loginUser(body: {
@@ -175,7 +201,11 @@ export async function loginUser(body: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  return { ok: res.ok, status: res.status, data: await parseJson<AuthSuccessData>(res) };
+  return {
+    ok: res.ok,
+    status: res.status,
+    data: await parseJson<AuthSuccessData>(res),
+  };
 }
 
 export async function forgotPassword(body: {
@@ -191,9 +221,11 @@ export async function forgotPassword(body: {
 
 export async function changePassword(
   body: { new_pin: string; old_pin: string },
-  token?: string
+  token?: string,
 ): Promise<ApiResult> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE_URL}/api/justjob/change/password/`, {
@@ -233,7 +265,9 @@ export async function updatePassword({
 
   const data = await parseJson(res);
   const message = res.ok
-    ? (data.message as string) || (data.detail as string) || "PIN updated successfully."
+    ? (data.message as string) ||
+      (data.detail as string) ||
+      "PIN updated successfully."
     : extractError(data);
 
   return {
@@ -265,8 +299,8 @@ export async function getTotalJobs(): Promise<GetTotalJobsResponse> {
       typeof rawTotalJobs === "number"
         ? rawTotalJobs
         : typeof rawTotalJobs === "string"
-        ? parseInt(rawTotalJobs, 10) || 0
-        : 0;
+          ? parseInt(rawTotalJobs, 10) || 0
+          : 0;
 
     const rawAreaService = data["Area service"];
     const areaServiceString =
@@ -285,14 +319,22 @@ export async function getTotalJobs(): Promise<GetTotalJobsResponse> {
     return {
       ok: false,
       status: 500,
-      message: error instanceof Error ? error.message : "An unexpected network error occurred.",
+      message:
+        error instanceof Error
+          ? error.message
+          : "An unexpected network error occurred.",
     };
   }
 }
 
 export async function getJobs(
-  params: { search?: string; category?: string; page?: number; page_size?: number },
-  token?: string
+  params: {
+    search?: string;
+    category?: string;
+    page?: number;
+    page_size?: number;
+  },
+  token?: string,
 ): Promise<ApiResult<PagedJobsResponse>> {
   const qs = new URLSearchParams();
   if (params.search) qs.set("search", params.search);
@@ -306,7 +348,7 @@ export async function getJobs(
   try {
     const res = await fetch(
       `${API_BASE_URL}/api/justjob/jobs/${qs.toString() ? `?${qs.toString()}` : ""}`,
-      { headers, cache: "no-store" }
+      { headers, cache: "no-store" },
     );
 
     const rawData = await parseJson<Record<string, unknown>>(res);
@@ -314,15 +356,15 @@ export async function getJobs(
     const items = Array.isArray(rawData.items)
       ? (rawData.items as Apijustjob[])
       : Array.isArray(rawData)
-      ? (rawData as Apijustjob[])
-      : [];
+        ? (rawData as Apijustjob[])
+        : [];
 
     const count =
       typeof rawData.count === "number"
         ? rawData.count
         : typeof rawData.total === "number"
-        ? rawData.total
-        : items.length;
+          ? rawData.total
+          : items.length;
 
     const data: PagedJobsResponse = { items, count };
 
@@ -340,7 +382,7 @@ export async function getJobs(
 
 export async function getSingleJob(
   justjobId: string,
-  token?: string
+  token?: string,
 ): Promise<ApiResult<Apijustjob | null>> {
   if (!justjobId) {
     return { ok: false, status: 400, data: null };
@@ -355,7 +397,7 @@ export async function getSingleJob(
   try {
     const res = await fetch(
       `${API_BASE_URL}/api/justjob/single/job/?${qs.toString()}`,
-      { headers, cache: "no-store" }
+      { headers, cache: "no-store" },
     );
 
     const rawData = await parseJson(res);
@@ -370,11 +412,23 @@ export async function getSingleJob(
 
     let unwrappedJob: Record<string, unknown> = rawData;
     if (rawData && typeof rawData === "object") {
-      if ("data" in rawData && rawData.data && typeof rawData.data === "object") {
+      if (
+        "data" in rawData &&
+        rawData.data &&
+        typeof rawData.data === "object"
+      ) {
         unwrappedJob = rawData.data as Record<string, unknown>;
-      } else if ("job" in rawData && rawData.job && typeof rawData.job === "object") {
+      } else if (
+        "job" in rawData &&
+        rawData.job &&
+        typeof rawData.job === "object"
+      ) {
         unwrappedJob = rawData.job as Record<string, unknown>;
-      } else if ("items" in rawData && Array.isArray(rawData.items) && rawData.items.length > 0) {
+      } else if (
+        "items" in rawData &&
+        Array.isArray(rawData.items) &&
+        rawData.items.length > 0
+      ) {
         unwrappedJob = rawData.items[0];
       }
     }
@@ -393,3 +447,53 @@ export async function getSingleJob(
     };
   }
 }
+
+export async function fetchQuestionsFromApi(
+  category: JobRole | string,
+  number: number,
+  token?: string
+): Promise<Question[]> {
+  
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  try {
+    const url = `${API_BASE_URL}/api/maekandex/academy?number=${number}&category=${encodeURIComponent(category)}`;
+    const response = await fetch(url, {
+      method: "GET",
+      headers, // ✅ FIXED: Pass the headers object directly
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      throw new Error(
+        `API Error (${response.status}): ${errorText || response.statusText}`,
+      );
+    }
+
+    const data: ProxyResponse = await response.json();
+
+    if (!data || !Array.isArray(data.questions)) {
+      throw new Error(
+        'Invalid response structure: "questions" array was not returned.',
+      );
+    }
+
+    // Map the API structure to the application's Question interface
+    return data.questions.map((q, index) => ({
+      id: `q-${Date.now()}-${index}`, // Generate unique ID on the client
+      category: category,
+      jobRole: category as JobRole,
+      questionText: q.question,
+      options: q.options,
+      correctOptionIndex: q.answer,
+    }));
+  } catch (error) {
+    console.error("Error fetching questions:", error);
+    throw error instanceof Error
+      ? error
+      : new Error("An unexpected error occurred while fetching questions.");
+  }
+}
+

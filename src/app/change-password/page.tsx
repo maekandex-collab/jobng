@@ -141,7 +141,7 @@ export default function UpdatePasswordPage() {
           <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-(--gold)/20 via-(--gold)/10 to-transparent border border-(--gold)/30 flex items-center justify-center mx-auto mb-4 text-(--gold-hover) shadow-sm">
             <FiKey size={24} />
           </div>
-          <h1 className="text-2xl font-extrabold text-(--ink) tracking-tight">
+          <h1 className="text-2xl font-extrabold !text-gray-800 tracking-tight">
             Change Security PIN
           </h1>
           <p className="text-xs sm:text-sm text-(--text-muted) mt-1.5 leading-normal">
