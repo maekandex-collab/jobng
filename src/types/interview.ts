@@ -1,4 +1,4 @@
-export type JobRole = "entry" | "security" | "data" | "product" | "digital_market" | "frontend" | "backend" | "sales" | "AI" | "finance" | "leadership";
+export type JobRole = "frontend" | "cyber_security" | "data" | "product" | "digital_market" | "entry" | "backend" | "sales" | "AI" | "finance" | "leadership";
 
 export interface Question {
   id: string;
