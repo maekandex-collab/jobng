@@ -71,7 +71,7 @@ export default function ContactPage() {
                 <FiPhone />
               </div>
               <div>
-                <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-1">
+                <h4 className="text-xs font-extrabold !text-slate-400 uppercase tracking-widest mb-1">
                   Phone & USSD
                 </h4>
                 <p className="text-slate-900 font-bold text-base leading-snug">
@@ -99,7 +99,7 @@ export default function ContactPage() {
 
           {/* Form Area (2 Columns) */}
           <div className="bg-white/90 backdrop-blur-xl border border-slate-200/80 rounded-3xl p-6 sm:p-10 shadow-2xl lg:col-span-2">
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mb-2">
+            <h2 className="text-2xl sm:text-3xl font-black !text-slate-900 tracking-tight mb-2">
               Send a Message
             </h2>
             <p className="text-slate-500 text-sm mb-8 font-normal">

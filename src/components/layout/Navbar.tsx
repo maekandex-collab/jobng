@@ -23,7 +23,7 @@ const navLinks = [
   { label: "Home", href: "/" },
   { label: "Find Jobs", href: "/jobs" },
   { label: "About Us", href: "/about" },
-  { label: "Contact", href: "/contact" },
+  // { label: "Contact", href: "/contact" },
 ];
 
 function formatPhoneNumber(phone?: string | null) {
@@ -192,17 +192,6 @@ export default function Navbar() {
                     </div>
 
                     <div className="p-2 space-y-1">
-                      <Link
-                        href="/prep-interview/practice"
-                        onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-ink no-underline hover:bg-emerald-50/70 hover:text-emerald-900 transition-colors group"
-                      >
-                        <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-100/60 text-emerald-700 shrink-0 group-hover:scale-105 transition-transform">
-                          <FaWandMagicSparkles size={14} />
-                        </span>
-                        Prep Interview
-                      </Link>
-
                       <Link
                         href="/change-password"
                         onClick={() => setProfileOpen(false)}

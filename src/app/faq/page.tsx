@@ -211,12 +211,12 @@ export default function FAQPage() {
           <p className="text-white/70 text-sm sm:text-base max-w-[440px] mx-auto mb-8 font-normal leading-relaxed">
             Our support team is ready to assist you with any questions or account inquiries.
           </p>
-          <Link
+          {/* <Link
             href="/contact"
             className="inline-flex items-center justify-center gap-2 font-bold text-sm bg-linear-to-r from-(--gold-light) via-(--gold) to-(--gold-hover) text-(--ink) shadow-(--shadow-gold) rounded-(--radius-sm) py-3.5 px-8 transition-all duration-200 hover:shadow-[0_12px_30px_rgba(0,166,81,0.3) hover:-translate-y-0.5 active:scale-[0.98]"
           >
             Contact Support
-          </Link>
+          </Link> */}
         </div>
       </section>
     </div>

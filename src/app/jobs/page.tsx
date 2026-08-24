@@ -20,7 +20,7 @@ import PageLoader from "@/components/shared/PageLoader";
 import { authHeaders } from "@/lib/auth-client";
 import { Apijustjob } from "@/lib/jobApi";
 
-const CATEGORY_OPTIONS = ["Remote", "On-site", "Hybrid", "Full-time", "Part-time"];
+const CATEGORY_OPTIONS = ["Remote", "On-site", "Hybrid", "Full-time", "Part-time", "Internship"];
 const PAGE_SIZE = 15;
 
 function JobsContent() {

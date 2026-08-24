@@ -1,27 +1,27 @@
 const TOKEN_KEY = "job_token";
 const PHONE_KEY = "job_phone";
 
-export function getStoredToken(): string | null {
+export const getStoredToken = (): string | null => {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(TOKEN_KEY);
-}
+};
 
-export function getStoredPhone(): string | null {
+export const getStoredPhone = (): string | null => {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(PHONE_KEY);
-}
+};
 
-export function saveAuth(token: string, phone: string) {
+export const saveAuth = (token: string, phone: string): void => {
   localStorage.setItem(TOKEN_KEY, token);
   localStorage.setItem(PHONE_KEY, phone);
-}
+};
 
-export function clearAuth() {
+export const clearAuth = (): void => {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(PHONE_KEY);
-}
+};
 
-export function authHeaders(): Record<string, string> {
+export const authHeaders = (): Record<string, string> => {
   const token = getStoredToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
-}
+};

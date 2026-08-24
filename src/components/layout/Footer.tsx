@@ -19,7 +19,7 @@ const FOOTER_LINKS = {
     { label: "Forgot PIN", href: "/forgot-password" },
   ],
   company: [
-    { label: "Contact Us", href: "/contact" },
+    // { label: "Contact Us", href: "/contact" },
     { label: "FAQ", href: "/faq" },
     { label: "Privacy Policy", href: "/privacy-policy" },
   ],

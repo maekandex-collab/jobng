@@ -141,7 +141,7 @@ export default function AboutPage() {
       {/* Values Section */}
       <section className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 mt-28">
         <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
-          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+          <h2 className="text-3xl sm:text-4xl font-black !text-slate-900 tracking-tight">
             Our Core Values
           </h2>
           <p className="mt-3 text-slate-600 text-base sm:text-lg">
