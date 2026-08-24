@@ -7,10 +7,6 @@ interface UpstreamQuestionItem {
   answer: number;
 }
 
-interface UpstreamResponse {
-  questions: UpstreamQuestionItem[];
-}
-
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get('category') || 'product';
@@ -31,7 +27,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const data: UpstreamResponse = await response.json();
+    const data: { questions: UpstreamQuestionItem[] } = await response.json();
 
     if (!data || !Array.isArray(data.questions)) {
       return NextResponse.json(

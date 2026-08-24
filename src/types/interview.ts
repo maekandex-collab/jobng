@@ -10,22 +10,17 @@ export type JobRole =
   | 'entry'
   | 'product';
 
-// export type DifficultyLevel = 'easy' | 'medium';
-
 export interface Question {
   id: string;
   category: string;
   jobRole: JobRole;
-  // difficulty: DifficultyLevel;
   questionText: string;
   options: string[];
   correctOptionIndex: number;
-  // explanation: string;
 }
 
 export interface InterviewConfig {
   jobRole: JobRole;
-  // difficulty: DifficultyLevel;
   questionCount: number;
 }
 
