@@ -94,7 +94,7 @@ export default function HeroSection() {
         )}
 
         {/* Header Banner */}
-        <motion.h1 variants={fadeUp(0.1)} initial="hidden" animate="show" className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-[#0A0F1C] leading-[1.1] mb-5">
+        <motion.h1 variants={fadeUp(0.1)} initial="hidden" animate="show" className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight !text-[#0A0F1C] leading-[1.1] mb-5">
           Your next Job<br />
           <span className="text-white drop-shadow-[0_2px_20px_rgba(120,53,15,0.25)">starts here.</span>
         </motion.h1>

@@ -1,14 +1,4 @@
-export type JobRole =
-  | 'frontend'
-  | 'backend'
-  | 'AI'
-  | 'data'
-  | 'digital_market'
-  | 'sales'
-  | 'finance'
-  | 'leadership'
-  | 'entry'
-  | 'product';
+export type JobRole = "entry" | "security" | "data" | "product" | "digital_market" | "frontend" | "backend" | "sales" | "AI" | "finance" | "leadership";
 
 export interface Question {
   id: string;
@@ -29,10 +19,4 @@ export interface UserResponse {
   selectedOptionIndex: number | null;
   isCorrect: boolean;
   timeSpentSeconds: number;
-}
-
-export interface JobRoleOption {
-  id: JobRole;
-  label: string;
-  categories: string[];
 }

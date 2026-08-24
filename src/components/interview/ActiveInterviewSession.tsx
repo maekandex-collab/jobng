@@ -1,10 +1,11 @@
 /* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/exhaustive-deps */
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Question, InterviewConfig, UserResponse } from '@/types/interview';
-import { FiClock, FiArrowRight, FiArrowLeft, FiCheck } from 'react-icons/fi';
+import { FiClock, FiArrowRight, FiCheck } from 'react-icons/fi';
 
 interface ActiveInterviewSessionProps {
   questions: Question[];
@@ -13,6 +14,7 @@ interface ActiveInterviewSessionProps {
 }
 
 const TIMER_LIMIT = 60;
+const springTransition = { type: 'spring' as const, bounce: 0, duration: 0.4 };
 
 export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
   questions,
@@ -20,38 +22,20 @@ export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState<number>(TIMER_LIMIT);
-  const [selectedAnswers, setSelectedAnswers] = useState<(number | null)[]>(() => new Array(questions.length).fill(null));
-  const [timeSpent, setTimeSpent] = useState<number[]>(() => new Array(questions.length).fill(0));
+  const [selectedAnswers, setSelectedAnswers] = useState<(number | null)[]>(
+    new Array(questions.length).fill(null)
+  );
 
-  const autoAdvanceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const currentQuestion = questions[currentIndex];
   const progressPercent = Math.round(((currentIndex + 1) / questions.length) * 100);
-
-  const finishInterview = useCallback(() => {
-    const finalResponses: UserResponse[] = questions.map((q, idx) => ({
-      questionId: q.id,
-      selectedOptionIndex: selectedAnswers[idx],
-      isCorrect: selectedAnswers[idx] === q.correctOptionIndex,
-      timeSpentSeconds: timeSpent[idx] || TIMER_LIMIT,
-    }));
-    onComplete(finalResponses);
-  }, [questions, selectedAnswers, timeSpent, onComplete]);
-
-  const handleNextQuestion = useCallback(() => {
-    if (currentIndex + 1 < questions.length) {
-      setCurrentIndex((prev) => prev + 1);
-    } else {
-      finishInterview();
-    }
-  }, [currentIndex, questions.length, finishInterview]);
 
   useEffect(() => {
     setTimeLeft(TIMER_LIMIT);
     const interval = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
+          handleNextQuestion();
+          return TIMER_LIMIT;
         }
         return prev - 1;
       });
@@ -59,62 +43,66 @@ export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
     return () => clearInterval(interval);
   }, [currentIndex]);
 
-  useEffect(() => {
-    if (timeLeft === 0) {
-      handleNextQuestion();
-    }
-  }, [timeLeft, handleNextQuestion]);
-
-  useEffect(() => {
-    return () => {
-      if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
-    };
-  }, []);
-
   const handleSelectOption = (index: number) => {
     const updatedAnswers = [...selectedAnswers];
     updatedAnswers[currentIndex] = index;
     setSelectedAnswers(updatedAnswers);
 
-    const updatedTimeSpent = [...timeSpent];
-    updatedTimeSpent[currentIndex] = TIMER_LIMIT - timeLeft;
-    setTimeSpent(updatedTimeSpent);
-
-    if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
-    autoAdvanceTimerRef.current = setTimeout(() => {
+    // Subtle pause before moving on
+    setTimeout(() => {
       if (currentIndex + 1 < questions.length) {
         setCurrentIndex((prev) => prev + 1);
+      } else {
+        finishInterview(updatedAnswers);
       }
-    }, 350);
+    }, 400);
+  };
+
+  const handleNextQuestion = () => {
+    if (currentIndex + 1 < questions.length) {
+      setCurrentIndex((prev) => prev + 1);
+    } else {
+      finishInterview(selectedAnswers);
+    }
+  };
+
+  const finishInterview = (finalAnswers: (number | null)[]) => {
+    const finalResponses: UserResponse[] = questions.map((q, idx) => {
+      const selected = finalAnswers[idx];
+      return {
+        questionId: q.id,
+        selectedOptionIndex: selected,
+        isCorrect: selected === q.correctOptionIndex,
+        timeSpentSeconds: TIMER_LIMIT - timeLeft,
+      };
+    });
+    onComplete(finalResponses);
   };
 
   const currentSelectedOption = selectedAnswers[currentIndex];
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.98 }}
-      transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-      className="font-['Lato',sans-serif] max-w-3xl mx-auto space-y-5 pb-10"
-    >
-      <div className="bg-white border border-[#0F172A]/10 rounded-2xl p-4 sm:p-5 flex items-center justify-between gap-4 shadow-sm">
+    <div className="font-['Lato',sans-serif] max-w-3xl mx-auto space-y-6 pb-10">
+      
+      {/* Header Bar */}
+      <div className="bg-white/80 backdrop-blur-xl border border-gray-200/60 rounded-3xl p-5 flex items-center justify-between gap-4 shadow-sm">
         <div>
-          <span className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-[#00A651]/10 text-[#00863F] text-xs font-bold border border-[#00A651]/20">
-            {currentQuestion?.category || 'General'}
+          <span className="uppercase tracking-widest text-[10px] font-black text-gray-400 block mb-1">
+            {currentQuestion?.category}
           </span>
-          <p className="text-xs text-[#64748B] mt-1.5 font-medium">
-            Question <span className="text-[#0A0F1C] font-bold">{currentIndex + 1}</span> of {questions.length}
+          <p className="text-sm text-gray-900 font-bold">
+            Question {currentIndex + 1} <span className="text-gray-400 font-normal">of {questions.length}</span>
           </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-[#F8F9FA] border border-[#0F172A]/10 px-3.5 py-1.5 rounded-xl text-[#0A0F1C] font-mono font-bold text-sm">
-          <FiClock className={`w-4 h-4 ${timeLeft <= 10 ? 'text-red-500 animate-pulse' : 'text-[#00A651]'}`} />
-          <span>00:{String(Math.max(0, timeLeft)).padStart(2, '0')}</span>
+        <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-mono font-bold text-sm transition-colors duration-300 ${timeLeft <= 10 ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-900'}`}>
+          <FiClock className={`w-4 h-4 ${timeLeft <= 10 ? 'animate-pulse' : ''}`} />
+          <span>00:{String(timeLeft).padStart(2, '0')}</span>
         </div>
       </div>
 
-      <div className="w-full bg-[#E8E6E1] h-2 rounded-full overflow-hidden">
+      {/* Progress Bar */}
+      <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
         <motion.div
           className="bg-[#00A651] h-full"
           animate={{ width: `${progressPercent}%` }}
@@ -122,21 +110,22 @@ export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
         />
       </div>
 
-      <div className="bg-white border border-[#0F172A]/10 rounded-3xl p-5 sm:p-8 shadow-sm overflow-hidden relative">
+      {/* Question Card */}
+      <div className="bg-white/80 backdrop-blur-xl border border-gray-200/60 rounded-[32px] p-6 sm:p-10 shadow-sm relative overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-            className="space-y-6"
+            initial={{ opacity: 0, filter: 'blur(8px)', x: 10 }}
+            animate={{ opacity: 1, filter: 'blur(0px)', x: 0 }}
+            exit={{ opacity: 0, filter: 'blur(8px)', x: -10 }}
+            transition={springTransition}
+            className="space-y-8"
           >
-            <h3 className="text-base sm:text-lg font-bold text-[#0A0F1C] leading-snug">
+            <h3 className="text-xl sm:text-2xl font-bold !text-gray-900 leading-tight">
               {currentQuestion?.questionText}
             </h3>
 
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {currentQuestion?.options.map((optText, idx) => {
                 const isSelected = currentSelectedOption === idx;
                 return (
@@ -144,69 +133,37 @@ export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
                     type="button"
                     key={idx}
                     onClick={() => handleSelectOption(idx)}
-                    className={`w-full p-3.5 rounded-2xl border text-left flex items-center justify-between gap-3 transition-all ${
-                      isSelected
-                        ? 'bg-[#00A651]/10 border-[#00A651] text-[#0A0F1C] font-semibold ring-1 ring-[#00A651]'
-                        : 'bg-[#F8F9FA] border-[#0F172A]/10 text-[#1E293B] hover:bg-slate-50'
-                    }`}
+                    className="relative w-full p-4 sm:p-5 rounded-2xl text-left flex items-start gap-4 group transition-all duration-300 outline-none"
                   >
-                    <div className="flex items-start gap-3">
-                      <div className={`w-6 h-6 rounded-full border flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5 transition-colors ${
-                          isSelected ? 'bg-[#00A651] border-[#00A651] text-white' : 'border-[#64748B] text-[#64748B]'
-                        }`}
-                      >
-                        {String.fromCharCode(65 + idx)}
+                    {/* Background layer for animation */}
+                    <div className={`absolute inset-0 rounded-2xl border transition-all duration-300 ${isSelected ? 'bg-[#00A651]/5 border-[#00A651]/30' : 'bg-white border-gray-200 group-hover:border-gray-300 group-hover:bg-gray-50/50'}`} />
+                    
+                    <div className="relative z-10 flex items-start gap-4 w-full">
+                      <div className={`w-6 h-6 rounded-full border flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5 transition-colors duration-300 ${isSelected ? 'bg-[#00A651] border-[#00A651] text-white shadow-sm' : 'border-gray-300 text-gray-400 group-hover:border-gray-400 group-hover:text-gray-500'}`}>
+                        {isSelected ? <FiCheck className="w-3 h-3" /> : String.fromCharCode(65 + idx)}
                       </div>
-                      <span className="text-xs sm:text-sm leading-relaxed">{optText}</span>
+                      <span className={`text-sm sm:text-base leading-relaxed transition-colors duration-300 ${isSelected ? 'text-gray-900 font-semibold' : 'text-gray-600 group-hover:text-gray-900'}`}>
+                        {optText}
+                      </span>
                     </div>
-                    {isSelected && <FiCheck className="w-4 h-4 text-[#00A651] flex-shrink-0" />}
                   </button>
                 );
               })}
             </div>
 
-            <div className="flex items-center justify-between gap-3 pt-4 border-t border-[#0F172A]/5">
-              <button
-                type="button"
-                onClick={() => {
-                  if (currentIndex > 0) {
-                    if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
-                    setCurrentIndex((prev) => prev - 1);
-                  }
-                }}
-                disabled={currentIndex === 0}
-                className={`px-4 py-3 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all ${
-                  currentIndex === 0
-                    ? 'opacity-40 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200'
-                    : 'bg-white border-[#0F172A]/20 text-[#0A0F1C] hover:bg-gray-50'
-                }`}
-              >
-                <FiArrowLeft className="w-4 h-4" />
-                <span>Previous</span>
-              </button>
-
-              {currentIndex + 1 === questions.length ? (
-                <button
-                  type="button"
-                  onClick={finishInterview}
-                  className="px-6 py-3 rounded-xl bg-[#00A651] hover:bg-[#00863F] text-white font-bold text-xs flex items-center gap-2 shadow-md transition-colors"
-                >
-                  <span>Submit & Finish</span>
-                </button>
-              ) : (
-                <button
+            <div className="flex justify-end pt-4">
+               <button
                   type="button"
                   onClick={handleNextQuestion}
-                  className="px-5 py-3 rounded-xl bg-[#0A0F1C] hover:bg-[#151B2E] text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-colors"
+                  className="px-6 py-3 rounded-2xl bg-gray-900 hover:bg-black active:scale-95 text-white font-bold text-xs flex items-center gap-2 transition-all"
                 >
-                  <span>Next</span>
+                  <span>{currentIndex + 1 === questions.length ? 'Submit' : 'Skip & Next'}</span>
                   <FiArrowRight className="w-4 h-4" />
                 </button>
-              )}
             </div>
           </motion.div>
         </AnimatePresence>
       </div>
-    </motion.div>
+    </div>
   );
 };

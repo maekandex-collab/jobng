@@ -22,92 +22,77 @@ export const InterviewResults: React.FC<InterviewResultsProps> = ({
   const isPassed = scorePercentage >= 70;
 
   const containerVariants: Variants = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { staggerChildren: 0.1, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] } }
+    hidden: { opacity: 0, scale: 0.95 },
+    show: { opacity: 1, scale: 1, transition: { staggerChildren: 0.1, duration: 0.5, type: 'spring', bounce: 0.2 } }
   };
 
   const itemVariants: Variants = {
     hidden: { opacity: 0, y: 15 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] } }
+    show: { opacity: 1, y: 0, transition: { type: 'spring', bounce: 0 } }
   };
 
   return (
     <motion.div 
-      variants={containerVariants}
-      initial="hidden"
-      animate="show"
+      variants={containerVariants} 
+      initial="hidden" 
+      animate="show" 
       className="font-['Lato',sans-serif] max-w-2xl mx-auto space-y-6"
     >
-      <div className={`border rounded-3xl p-6 sm:p-8 text-center space-y-6 shadow-md transition-all ${
-        isPassed 
-          ? 'bg-gradient-to-b from-emerald-50/50 to-white border-emerald-200' 
-          : 'bg-gradient-to-b from-rose-50/50 to-white border-rose-200'
-      }`}>
+      <div className="bg-white/80 backdrop-blur-xl border border-gray-200/60 rounded-[32px] p-8 sm:p-12 text-center space-y-8 shadow-[0_8px_40px_rgba(0,0,0,0.04)] relative overflow-hidden">
         
-        <motion.div variants={itemVariants} className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto border ${
-          isPassed ? 'bg-emerald-100 border-emerald-300 text-emerald-600' : 'bg-rose-100 border-rose-300 text-rose-600'
-        }`}>
-          {isPassed ? <FiAward className="w-8 h-8" /> : <FiAlertCircle className="w-8 h-8" />}
-        </motion.div>
+        {/* Soft background glow based on result */}
+        <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-md blur-[100px] opacity-20 pointer-events-none ${isPassed ? 'bg-[#00A651]' : 'bg-rose-500'}`} />
 
-        <motion.div variants={itemVariants}>
-          <div className="inline-block mb-2">
+        <motion.div variants={itemVariants} className="relative z-10">
+          <div className={`w-20 h-20 mx-auto rounded-[24px] flex items-center justify-center mb-6 shadow-sm border ${isPassed ? 'bg-emerald-50 border-emerald-100 text-[#00A651]' : 'bg-rose-50 border-rose-100 text-rose-500'}`}>
+             {isPassed ? <FiAward className="w-10 h-10" /> : <FiAlertCircle className="w-10 h-10" />}
+          </div>
+          <div className="inline-block mb-3">
             {isPassed ? (
-              <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-full items-center gap-1.5 inline-flex text-[11px] font-bold uppercase tracking-wider">
-                <FiCheckCircle className="w-3.5 h-3.5" /> Interview Passed
+              <span className="bg-[#00A651]/10 text-[#00863F] border border-[#00A651]/20 px-4 py-1.5 rounded-full text-xs font-bold flex items-center gap-2">
+                <FiCheckCircle className="w-4 h-4" /> Passed Benchmark
               </span>
             ) : (
-              <span className="bg-rose-100 text-rose-800 border border-rose-200 px-3 py-1 rounded-full items-center gap-1.5 inline-flex text-[11px] font-bold uppercase tracking-wider">
-                <FiAlertCircle className="w-3.5 h-3.5" /> Needs Improvement
+              <span className="bg-rose-100 text-rose-800 border border-rose-200 px-4 py-1.5 rounded-full text-xs font-bold flex items-center gap-2">
+                <FiAlertCircle className="w-4 h-4" /> Practice Required
               </span>
             )}
           </div>
-          <h2 className="text-2xl font-black text-[#0A0F1C]">Session Complete!</h2>
+          <h2 className="text-3xl font-black text-gray-900 tracking-tight">Session Complete</h2>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="bg-white/80 backdrop-blur-sm border border-[#0F172A]/10 p-5 rounded-2xl flex items-center justify-around shadow-sm">
+        <motion.div variants={itemVariants} className="relative z-10 bg-gray-50/50 border border-gray-100 p-6 rounded-3xl flex items-center justify-around">
           <div>
-            <span className={`text-3xl font-extrabold ${isPassed ? 'text-emerald-600' : 'text-rose-600'}`}>
+            <span className={`text-4xl font-black tracking-tighter ${isPassed ? 'text-[#00A651]' : 'text-rose-500'}`}>
               {scorePercentage}%
             </span>
-            <p className="text-xs text-[#64748B] font-semibold mt-1">Accuracy Score</p>
+            <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider mt-2">Accuracy Score</p>
           </div>
-          <div className="h-10 w-px bg-[#0F172A]/10" />
+          <div className="h-16 w-px bg-gray-200" />
           <div>
-            <span className="text-3xl font-extrabold text-[#0A0F1C]">
-              {correctCount} / {totalQuestions}
+            <span className="text-4xl font-black tracking-tighter text-gray-900">
+              {correctCount}<span className="text-2xl text-gray-300">/{totalQuestions}</span>
             </span>
-            <p className="text-xs text-[#64748B] font-semibold mt-1">Correct Answers</p>
+            <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider mt-2">Correct Answers</p>
           </div>
         </motion.div>
 
-        <motion.div variants={itemVariants} className={`p-4 rounded-2xl text-xs text-left leading-relaxed border ${
-          isPassed ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900' : 'bg-rose-50/80 border-rose-200 text-rose-900'
-        }`}>
-          <strong className="block font-bold mb-1">
-            {isPassed ? 'Excellent Demonstration of Concepts!' : 'Targeted Practice Recommended:'}
-          </strong>
-          {isPassed 
-            ? 'You demonstrated strong technical mastery across the core domain concepts. You are well prepared to advance to real technical interviews for this position.' 
-            : 'Your score fell below the standard 70% threshold. Review missed core concepts in the questions above and restart a new session to strengthen your grasp.'}
-        </motion.div>
-
-        <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+        <motion.div variants={itemVariants} className="relative z-10 grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
           <button
             type="button"
             onClick={onRestart}
-            className="py-3.5 px-4 rounded-xl bg-[#0A0F1C] hover:bg-[#151B2E] text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-sm"
+            className="py-4 px-6 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-900 text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
           >
             <FiRotateCcw className="w-4 h-4" />
-            <span>Retake Interview Session</span>
+            <span>Retake Interview</span>
           </button>
           <button
             type="button"
             onClick={onApplyForJobs || (() => window.location.href = '/jobs')}
-            className="py-3.5 px-4 rounded-xl bg-[#00A651] hover:bg-[#00863F] text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-sm"
+            className="py-4 px-6 rounded-2xl bg-gray-900 hover:bg-black text-white text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-black/10"
           >
             <FiBriefcase className="w-4 h-4" />
-            <span>Apply for Job Openings</span>
+            <span>Apply for Roles</span>
           </button>
         </motion.div>
       </div>
