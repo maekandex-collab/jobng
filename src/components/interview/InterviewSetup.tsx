@@ -11,7 +11,7 @@ interface InterviewSetupProps {
 }
 
 const JOB_ROLES: JobRole[] = [
-  "entry", "security", "data", "product", "digital_market", "frontend", "backend", "sales", "AI", "finance", "leadership"
+  "frontend", "cyber_security", "data", "product", "digital_market", "entry", "backend", "sales", "AI", "finance", "leadership"
 ];
 
 // Apple-style spring animation config
