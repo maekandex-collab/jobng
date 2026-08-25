@@ -4,7 +4,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname,
+  // useRouter 
+} from "next/navigation";
 import {
   FiMenu,
   FiX,
@@ -23,6 +25,7 @@ const navLinks = [
   { label: "Home", href: "/" },
   { label: "Find Jobs", href: "/jobs" },
   { label: "About Us", href: "/about" },
+  { label: "Prep Interview", href: "/prep-interview/practice"}
   // { label: "Contact", href: "/contact" },
 ];
 
@@ -48,7 +51,7 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
+  // const router = useRouter();
 
   const { isAuthenticated, logout, phone, ready, avatarUrl } = useAuth() as {
     isAuthenticated: boolean;
@@ -135,7 +138,7 @@ export default function Navbar() {
               );
             })}
 
-            {ready && isAuthenticated && (
+            {/* {ready && isAuthenticated && ( */}
               <Link
                 href="/prep-interview/practice"
                 className={`px-4 py-2 rounded-full text-xs font-semibold no-underline transition-all duration-200 flex items-center gap-2 ${
@@ -147,7 +150,7 @@ export default function Navbar() {
                 <FaWandMagicSparkles className="text-emerald-600 w-3.5 h-3.5 shrink-0 animate-pulse" />
                 <span>Prep Interview</span>
               </Link>
-            )}
+            {/* )} */}
           </nav>
 
           {/* Right Action Menu */}
@@ -309,7 +312,7 @@ export default function Navbar() {
 
           {ready && isAuthenticated && (
             <>
-              <Link
+              {/* <Link
                 href="/prep-interview/practice"
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
@@ -320,7 +323,7 @@ export default function Navbar() {
               >
                 <FaWandMagicSparkles size={16} className="text-emerald-600 shrink-0" />
                 Prep Interview
-              </Link>
+              </Link> */}
 
               <Link
                 href="/change-password"
