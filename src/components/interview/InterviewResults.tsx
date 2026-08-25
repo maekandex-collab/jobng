@@ -102,7 +102,7 @@ export const InterviewResults: React.FC<InterviewResultsProps> = ({
             )}
           </div>
 
-          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h2 className="text-3xl font-extrabold !text-slate-900 tracking-tight">
             Session Complete
           </h2>
           <p className="text-sm font-medium text-slate-500 mt-1">

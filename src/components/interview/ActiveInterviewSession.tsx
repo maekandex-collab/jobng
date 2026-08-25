@@ -128,7 +128,7 @@ export const ActiveInterviewSession: React.FC<ActiveInterviewSessionProps> = ({
             className="space-y-4"
           >
             {/* Question Text */}
-            <h3 className="text-base sm:text-xl font-black text-gray-900 leading-snug tracking-tight">
+            <h3 className="text-base sm:text-xl font-black !text-gray-900 leading-snug tracking-tight">
               {currentQuestion?.questionText}
             </h3>
 
