@@ -2,15 +2,13 @@
 import { NextResponse } from "next/server";
 import { getJobs, Apijustjob } from "@/lib/jobApi";
 
-interface GlobalCache {
-  items: Apijustjob[];
-  timestamp: number;
-}
+const CACHE_TTL_MS = 60 * 1000; // 1 minute
 
-const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes
-let globalJobsCache: GlobalCache | null = null;
+// In-memory cache variable declaration
+let globalJobsCache: { items: Apijustjob[]; timestamp: number } | null = null;
 
-export function extractItems(data: any): Apijustjob[] {
+// Removed 'export' keyword so Next.js route handler type checks pass
+function extractItems(data: any): Apijustjob[] {
   if (Array.isArray(data)) return data;
   if (data && Array.isArray(data.items)) return data.items;
   if (data && Array.isArray(data.data)) return data.data;
@@ -121,7 +119,7 @@ export async function GET(req: Request) {
     // Refresh cache if missing or expired
     if (!globalJobsCache || now - globalJobsCache.timestamp > CACHE_TTL_MS) {
       const allJobs = await fetchAllUpstreamJobs(token);
-      
+
       // ONLY update cache if upstream returned jobs (prevents caching empty state)
       if (allJobs.length > 0) {
         globalJobsCache = {
