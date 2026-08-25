@@ -1,4 +1,3 @@
-import { extractItems } from "@/app/api/jobs/route";
 import { API_BASE_URL } from "./config";
 import { Question, JobRole } from "@/types/interview";
 
@@ -63,6 +62,13 @@ export interface GetTotalJobsResponse {
   message?: string;
 }
 
+export function extractItems(data: Record<string, unknown>): Apijustjob[] {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.items)) return data.items;
+  if (data && Array.isArray(data.data)) return data.data;
+  if (data && Array.isArray(data.results)) return data.results;
+  return [];
+}
 export function extractError(
   data: Record<string, unknown> | null | undefined | unknown,
   fallback = "Something went wrong. Please try again.",
