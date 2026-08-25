@@ -2,13 +2,11 @@
 
 import React, { useState } from 'react';
 import { AnimatePresence, motion, Variants } from 'framer-motion';
-import { InterviewConfig, Question, UserResponse } from '@/types/interview';
+import { InterviewConfig, JobRole, Question, UserResponse } from '@/types/interview';
 import { ActiveInterviewSession } from '@/components/interview/ActiveInterviewSession';
 import { InterviewResults } from '@/components/interview/InterviewResults';
 import { InterviewSetup } from '@/components/interview/InterviewSetup';
-import { fetchQuestionsFromApi } from '@/lib/jobApi';
 
-// Apple-style modern fade & slide variants using spring physics
 const fadeVariants: Variants = {
   hidden: { opacity: 0, y: 15 },
   visible: { 
@@ -29,38 +27,45 @@ export default function InterviewPrepPracticePage() {
   const [responses, setResponses] = useState<UserResponse[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedRole, setSelectedRole] = useState<JobRole>("frontend");
 
-  // Cleanly derive the current UI step from our state
   const step = !config ? 'setup' : !responses ? 'active' : 'results';
 
-  const handleStartSession = async (newConfig: InterviewConfig) => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const token = typeof window !== 'undefined' 
-        ? localStorage.getItem('job_token') 
-        : undefined;
 
-      const sessionQuestions = await fetchQuestionsFromApi(
-        newConfig.jobRole,
-        newConfig.questionCount,
-        token || undefined 
-      );
-      
-      setConfig(newConfig);
-      setQuestions(sessionQuestions);
-      setResponses(null);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch questions. Please try again.');
-      
-      // Auto-dismiss the error toast after 5 seconds for better UX
-      setTimeout(() => setError(null), 5000);
-    } finally {
-      setIsLoading(false);
+const handleStartSession = async (newConfig: InterviewConfig) => {
+  setIsLoading(true);
+  setError(null);
+  
+  try {
+    const currentToken = typeof window !== 'undefined' ? localStorage.getItem('job_token') : null;
+
+    const url = `/api/interview?category=${encodeURIComponent(newConfig.jobRole)}&number=${newConfig.questionCount}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+      'Content-Type': 'application/json',
+      ...(currentToken ? { Authorization: `Bearer ${currentToken}` } : {}),
+    },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to fetch questions. Please try again.');
     }
-  };
+
+    setConfig(newConfig);
+    setQuestions(data.questions);
+    setResponses(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Failed to fetch questions. Please try again.');
+    setTimeout(() => setError(null), 5000);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleRestart = () => {
     setConfig(null);
@@ -74,7 +79,7 @@ export default function InterviewPrepPracticePage() {
     <main className="font-['Lato',sans-serif] min-h-screen bg-gray-50/50 text-gray-900 py-12 sm:py-20 px-4 sm:px-6 lg:px-8 selection:bg-[#00A651]/20 overflow-hidden">
       <div className="max-w-5xl mx-auto relative">
         
-        {/* iOS-Style Floating Error Toast */}
+        {/* Error Toast */}
         <AnimatePresence>
           {error && (
             <motion.div 
@@ -84,7 +89,7 @@ export default function InterviewPrepPracticePage() {
               transition={{ type: 'spring', stiffness: 400, damping: 25 }}
               className="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-5 py-3 bg-white/85 backdrop-blur-md border border-rose-100 shadow-lg shadow-rose-100/50 rounded-full text-sm font-medium text-rose-600"
             >
-              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               {error}
@@ -92,11 +97,13 @@ export default function InterviewPrepPracticePage() {
           )}
         </AnimatePresence>
 
-        {/* Main Content Area with Smooth Step Transitions */}
+        {/* Dynamic Views */}
         <AnimatePresence mode="wait">
           {step === 'setup' && (
             <motion.div key="setup" variants={fadeVariants} initial="hidden" animate="visible" exit="exit">
               <InterviewSetup 
+                roleSelected={selectedRole}
+                onRoleSelect={setSelectedRole}
                 onStartSession={handleStartSession} 
                 isLoading={isLoading} 
               />
@@ -119,6 +126,7 @@ export default function InterviewPrepPracticePage() {
           {step === 'results' && responses && (
             <motion.div key="results" variants={fadeVariants} initial="hidden" animate="visible" exit="exit">
               <InterviewResults
+                roleSelected={selectedRole}
                 responses={responses}
                 onRestart={handleRestart}
               />

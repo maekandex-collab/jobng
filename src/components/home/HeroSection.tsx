@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -7,7 +6,6 @@ import Link from "next/link";
 import { FiSearch, FiArrowRight } from "react-icons/fi";
 import { motion, type Variants } from "framer-motion";
 import { FaWandMagicSparkles } from "react-icons/fa6";
-import { authHeaders } from "@/lib/auth-client";
 
 const fadeUp = (delay = 0): Variants => ({
   hidden: { opacity: 0, y: 24 },
@@ -27,12 +25,12 @@ const popularTags = ["Engineering", "Finance", "Marketing", "Healthcare", "Remot
 export default function HeroSection() {
   const router = useRouter();
   const [keyword, setKeyword] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     // Check auth client-side after hydration to avoid SSR mismatch
-    const headers = authHeaders();
-    setIsLoggedIn(Boolean(headers && Object.keys(headers).length > 0));
+    // const headers = authHeaders();
+    // setIsLoggedIn(Boolean(headers && Object.keys(headers).length > 0));
   }, []);
 
   const handleSearch = (e?: React.FormEvent, searchKeyword?: string) => {
@@ -73,7 +71,7 @@ export default function HeroSection() {
       <div className="relative z-10 w-full max-w-[760px] mx-auto text-center">
         
         {/* Prep Interview Callout Pill */}
-        {isLoggedIn && (
+        {/* {isLoggedIn && ( */}
           <motion.div 
             variants={fadeUp(0.05)} 
             initial="hidden" 
@@ -91,7 +89,7 @@ export default function HeroSection() {
               <FiArrowRight size={14} className="transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
           </motion.div>
-        )}
+        {/* )} */}
 
         {/* Header Banner */}
         <motion.h1 variants={fadeUp(0.1)} initial="hidden" animate="show" className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight !text-[#0A0F1C] leading-[1.1] mb-5">

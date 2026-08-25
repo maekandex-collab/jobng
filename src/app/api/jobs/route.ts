@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
-import { getJobs, extractError, Apijustjob } from "@/lib/jobApi";
+import { getJobs, Apijustjob } from "@/lib/jobApi";
 
 interface GlobalCache {
   items: Apijustjob[];
@@ -10,48 +10,12 @@ interface GlobalCache {
 const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes
 let globalJobsCache: GlobalCache | null = null;
 
-function extractItems(data: any): Apijustjob[] {
+export function extractItems(data: any): Apijustjob[] {
   if (Array.isArray(data)) return data;
   if (data && Array.isArray(data.items)) return data.items;
   if (data && Array.isArray(data.data)) return data.data;
   if (data && Array.isArray(data.results)) return data.results;
   return [];
-}
-
-// Fetch all jobs from upstream (paginating until complete or reaching safety limit)
-async function fetchAllUpstreamJobs(token?: string): Promise<Apijustjob[]> {
-  const FETCH_PAGE_SIZE = 100;
-  let page = 1;
-  const allJobs: Apijustjob[] = [];
-  let hasMore = true;
-
-  while (hasMore && page <= 10) { // Fetch up to 1,000 jobs
-    const result = await getJobs(
-      { page, page_size: FETCH_PAGE_SIZE },
-      token
-    );
-
-    if (!result.ok) break;
-
-    const items = extractItems(result.data);
-    if (items.length === 0) break;
-
-    allJobs.push(...items);
-
-    if (items.length < FETCH_PAGE_SIZE) {
-      hasMore = false;
-    } else {
-      page++;
-    }
-  }
-
-  // Deduplicate by job_id
-  const uniqueMap = new Map<string, Apijustjob>();
-  for (const job of allJobs) {
-    if (job.job_id) uniqueMap.set(job.job_id, job);
-  }
-
-  return Array.from(uniqueMap.values());
 }
 
 function filterJobs(
@@ -67,7 +31,12 @@ function filterJobs(
       const jCat = j.category?.toLowerCase().trim() || "";
       const jTitle = j.job_title?.toLowerCase() || "";
       const jDesc = j.description?.toLowerCase() || "";
-      return jCat === catTerm || jCat.includes(catTerm) || jTitle.includes(catTerm) || jDesc.includes(catTerm);
+      return (
+        jCat === catTerm ||
+        jCat.includes(catTerm) ||
+        jTitle.includes(catTerm) ||
+        jDesc.includes(catTerm)
+      );
     });
   }
 
@@ -85,6 +54,56 @@ function filterJobs(
   return filtered;
 }
 
+// Fetch all jobs from upstream (paginating until complete or reaching safety limit)
+async function fetchAllUpstreamJobs(token?: string): Promise<Apijustjob[]> {
+  const FETCH_PAGE_SIZE = 100;
+  let page = 1;
+  const allJobs: Apijustjob[] = [];
+  let hasMore = true;
+
+  // Try fetching with the user's token first
+  while (hasMore && page <= 10) {
+    const result = await getJobs({ page, page_size: FETCH_PAGE_SIZE }, token);
+
+    if (!result.ok) {
+      console.warn(`Upstream job fetch failed with status ${result.status} using token.`);
+      break;
+    }
+
+    const items = extractItems(result.data);
+    if (items.length === 0) break;
+
+    allJobs.push(...items);
+    if (items.length < FETCH_PAGE_SIZE) hasMore = false;
+    else page++;
+  }
+
+  // Fallback: If token was invalid/expired or returned 0 items, retry publicly without token
+  if (allJobs.length === 0 && token) {
+    page = 1;
+    hasMore = true;
+    while (hasMore && page <= 10) {
+      const result = await getJobs({ page, page_size: FETCH_PAGE_SIZE });
+      if (!result.ok) break;
+
+      const items = extractItems(result.data);
+      if (items.length === 0) break;
+
+      allJobs.push(...items);
+      if (items.length < FETCH_PAGE_SIZE) hasMore = false;
+      else page++;
+    }
+  }
+
+  // Deduplicate by job_id
+  const uniqueMap = new Map<string, Apijustjob>();
+  for (const job of allJobs) {
+    if (job.job_id) uniqueMap.set(job.job_id, job);
+  }
+
+  return Array.from(uniqueMap.values());
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -99,19 +118,24 @@ export async function GET(req: Request) {
 
     const now = Date.now();
 
-    // Refresh global cache if missing or expired
+    // Refresh cache if missing or expired
     if (!globalJobsCache || now - globalJobsCache.timestamp > CACHE_TTL_MS) {
       const allJobs = await fetchAllUpstreamJobs(token);
-      globalJobsCache = {
-        items: allJobs,
-        timestamp: now,
-      };
+      
+      // ONLY update cache if upstream returned jobs (prevents caching empty state)
+      if (allJobs.length > 0) {
+        globalJobsCache = {
+          items: allJobs,
+          timestamp: now,
+        };
+      }
     }
 
-    // Apply exact filter over ALL cached jobs
-    const filteredJobs = filterJobs(globalJobsCache.items, search, category);
+    const sourceJobs = globalJobsCache?.items ?? [];
 
-    // Paginate over filtered results
+    // Apply exact filter over ALL cached jobs
+    const filteredJobs = filterJobs(sourceJobs, search, category);
+
     const totalCount = filteredJobs.length;
     const startIdx = (page - 1) * pageSize;
     const pagedItems = filteredJobs.slice(startIdx, startIdx + pageSize);

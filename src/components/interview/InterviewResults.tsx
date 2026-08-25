@@ -3,98 +3,194 @@
 import React from 'react';
 import { motion, Variants } from 'framer-motion';
 import { UserResponse } from '@/types/interview';
-import { FiAward, FiRotateCcw, FiBriefcase, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import { FiAward, FiRotateCcw, FiBriefcase, FiAlertCircle, FiCheckCircle, FiArrowRight } from 'react-icons/fi';
+import { useRouter } from 'next/navigation';
 
 interface InterviewResultsProps {
+  roleSelected: string;
   responses: UserResponse[];
   onRestart: () => void;
-  onApplyForJobs?: () => void;
 }
 
 export const InterviewResults: React.FC<InterviewResultsProps> = ({ 
+  roleSelected,
   responses, 
   onRestart,
-  onApplyForJobs 
 }) => {
+  const router = useRouter();
   const correctCount = responses.filter((r) => r.isCorrect).length;
   const totalQuestions = responses.length || 1;
   const scorePercentage = Math.round((correctCount / totalQuestions) * 100);
   const isPassed = scorePercentage >= 70;
 
+  // Apple-inspired spring physics
   const containerVariants: Variants = {
-    hidden: { opacity: 0, scale: 0.95 },
-    show: { opacity: 1, scale: 1, transition: { staggerChildren: 0.1, duration: 0.5, type: 'spring', bounce: 0.2 } }
+    hidden: { opacity: 0, scale: 0.96, y: 20 },
+    show: { 
+      opacity: 1, 
+      scale: 1, 
+      y: 0,
+      transition: { 
+        staggerChildren: 0.08, 
+        duration: 0.6, 
+        ease: [0.16, 1, 0.3, 1] 
+      } 
+    }
   };
 
   const itemVariants: Variants = {
-    hidden: { opacity: 0, y: 15 },
-    show: { opacity: 1, y: 0, transition: { type: 'spring', bounce: 0 } }
+    hidden: { opacity: 0, y: 16 },
+    show: { 
+      opacity: 1, 
+      y: 0, 
+      transition: { type: 'spring', stiffness: 300, damping: 24 } 
+    }
   };
+
+  const handleSearch = (searchKeyword?: string) => {
+    const query = searchKeyword !== undefined ? searchKeyword : roleSelected;
+    const params = new URLSearchParams();
+    if (query.trim()) params.set("q", query.trim());
+    router.push(`/jobs?${params.toString()}`);
+  };
+
+  // SVG Ring Progress Calculations
+  const radius = 42;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (scorePercentage / 100) * circumference;
 
   return (
     <motion.div 
       variants={containerVariants} 
       initial="hidden" 
       animate="show" 
-      className="font-['Lato',sans-serif] max-w-2xl mx-auto space-y-6"
+      className="max-w-xl mx-auto"
     >
-      <div className="bg-white/80 backdrop-blur-xl border border-gray-200/60 rounded-[32px] p-8 sm:p-12 text-center space-y-8 shadow-[0_8px_40px_rgba(0,0,0,0.04)] relative overflow-hidden">
+      <div className="relative overflow-hidden rounded-[36px] bg-white/70  backdrop-blur-2xl border border-slate-200/80 p-8 sm:p-11 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)] transition-all">
         
-        {/* Soft background glow based on result */}
-        <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-md blur-[100px] opacity-20 pointer-events-none ${isPassed ? 'bg-[#00A651]' : 'bg-rose-500'}`} />
+        {/* Dynamic Multi-layered Ambient Glow */}
+        <div 
+          aria-hidden="true"
+          className={`absolute -top-24 left-1/2 -translate-x-1/2 w-80 h-80 blur-[110px] opacity-25 rounded-full pointer-events-none transition-all duration-700 ${
+            isPassed ? 'bg-[#00A651]' : 'bg-rose-500'
+          }`} 
+        />
 
-        <motion.div variants={itemVariants} className="relative z-10">
-          <div className={`w-20 h-20 mx-auto rounded-[24px] flex items-center justify-center mb-6 shadow-sm border ${isPassed ? 'bg-emerald-50 border-emerald-100 text-[#00A651]' : 'bg-rose-50 border-rose-100 text-rose-500'}`}>
-             {isPassed ? <FiAward className="w-10 h-10" /> : <FiAlertCircle className="w-10 h-10" />}
-          </div>
-          <div className="inline-block mb-3">
+        {/* Header Section */}
+        <motion.div variants={itemVariants} className="relative z-10 flex flex-col items-center text-center">
+          <motion.div 
+            whileHover={{ scale: 1.05, rotate: isPassed ? 5 : -5 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+            className={`w-20 h-20 rounded-3xl flex items-center justify-center mb-5 shadow-inner border backdrop-blur-md ${
+              isPassed 
+                ? 'bg-emerald-500/10 border-emerald-500/20 text-[#00A651]' 
+                : 'bg-rose-500/10 border-rose-500/20 text-rose-500'
+            }`}
+          >
+            {isPassed ? <FiAward className="w-9 h-9" /> : <FiAlertCircle className="w-9 h-9" />}
+          </motion.div>
+
+          <div className="mb-3">
             {isPassed ? (
-              <span className="bg-[#00A651]/10 text-[#00863F] border border-[#00A651]/20 px-4 py-1.5 rounded-full text-xs font-bold flex items-center gap-2">
-                <FiCheckCircle className="w-4 h-4" /> Passed Benchmark
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide bg-emerald-500/10 text-[#00863F] border border-emerald-500/20 shadow-sm">
+                <FiCheckCircle className="w-3.5 h-3.5" /> Benchmark Passed
               </span>
             ) : (
-              <span className="bg-rose-100 text-rose-800 border border-rose-200 px-4 py-1.5 rounded-full text-xs font-bold flex items-center gap-2">
-                <FiAlertCircle className="w-4 h-4" /> Practice Required
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide bg-rose-500/10 text-rose-600  border border-rose-500/20 shadow-sm">
+                <FiAlertCircle className="w-3.5 h-3.5" /> Practice Recommended
               </span>
             )}
           </div>
-          <h2 className="text-3xl font-black text-gray-900 tracking-tight">Session Complete</h2>
+
+          <h2 className="text-3xl font-extrabold !text-slate-900 tracking-tight">
+            Session Complete
+          </h2>
+          <p className="text-sm font-medium text-slate-500 mt-1">
+            Role: <span className="text-slate-800 capitalize">{roleSelected.replace(/_/g, " ")}</span>
+          </p>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="relative z-10 bg-gray-50/50 border border-gray-100 p-6 rounded-3xl flex items-center justify-around">
-          <div>
-            <span className={`text-4xl font-black tracking-tighter ${isPassed ? 'text-[#00A651]' : 'text-rose-500'}`}>
-              {scorePercentage}%
-            </span>
-            <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider mt-2">Accuracy Score</p>
+        {/* Score Breakdown Metrics */}
+        <motion.div 
+          variants={itemVariants} 
+          className="relative z-10 my-8 p-6 rounded-3xl bg-slate-50/80 border border-slate-200/60 flex items-center justify-around gap-4 shadow-sm"
+        >
+          {/* Circular Visual Indicator */}
+          <div className="relative flex items-center justify-center shrink-0">
+            <svg className="w-24 h-24 transform -rotate-90">
+              <circle
+                cx="48"
+                cy="48"
+                r={radius}
+                className="stroke-slate-200"
+                strokeWidth="7"
+                fill="transparent"
+              />
+              <motion.circle
+                cx="48"
+                cy="48"
+                r={radius}
+                className={isPassed ? 'stroke-[#00A651]' : 'stroke-rose-500'}
+                strokeWidth="7"
+                strokeDasharray={circumference}
+                initial={{ strokeDashoffset: circumference }}
+                animate={{ strokeDashoffset }}
+                transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
+                strokeLinecap="round"
+                fill="transparent"
+              />
+            </svg>
+            <div className="absolute flex flex-col items-center justify-center text-center">
+              <span className={`text-2xl font-black tracking-tight ${isPassed ? 'text-[#00A651]' : 'text-rose-500'}`}>
+                {scorePercentage}%
+              </span>
+            </div>
           </div>
-          <div className="h-16 w-px bg-gray-200" />
-          <div>
-            <span className="text-4xl font-black tracking-tighter text-gray-900">
-              {correctCount}<span className="text-2xl text-gray-300">/{totalQuestions}</span>
-            </span>
-            <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider mt-2">Correct Answers</p>
+
+          <div className="h-14 w-px bg-slate-200" />
+
+          {/* Numerical Score */}
+          <div className="flex flex-col items-start justify-center">
+            <div className="flex items-baseline gap-1">
+              <span className="text-4xl font-extrabold text-slate-900 tracking-tight">
+                {correctCount}
+              </span>
+              <span className="text-lg font-bold text-slate-400">
+                /{totalQuestions}
+              </span>
+            </div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-1">
+              Correct Answers
+            </p>
           </div>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="relative z-10 grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
-          <button
+        {/* Action Controls */}
+        <motion.div variants={itemVariants} className="relative z-10 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <motion.button
             type="button"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={onRestart}
-            className="py-4 px-6 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-900 text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
+            className="py-3.5 px-5 rounded-2xl bg-slate-100  hover:bg-slate-200 text-slate-800 text-sm font-semibold flex items-center justify-center gap-2 border border-slate-200/50 transition-colors cursor-pointer"
           >
-            <FiRotateCcw className="w-4 h-4" />
+            <FiRotateCcw className="w-4 h-4 text-slate-500" />
             <span>Retake Interview</span>
-          </button>
-          <button
+          </motion.button>
+
+          <motion.button
             type="button"
-            onClick={onApplyForJobs || (() => window.location.href = '/jobs')}
-            className="py-4 px-6 rounded-2xl bg-gray-900 hover:bg-black text-white text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-black/10"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => handleSearch(roleSelected.replace(/_/g, " "))}
+            className="py-3.5 px-5 rounded-2xl bg-[#00A651] hover:bg-[#00863F] text-white text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-emerald-600/20 cursor-pointer"
           >
             <FiBriefcase className="w-4 h-4" />
             <span>Apply for Roles</span>
-          </button>
+            <FiArrowRight className="w-4 h-4 opacity-75" />
+          </motion.button>
         </motion.div>
+
       </div>
     </motion.div>
   );

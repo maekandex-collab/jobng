@@ -1,4 +1,4 @@
-import { authHeaders } from "./auth-client";
+import { extractItems } from "@/app/api/jobs/route";
 import { API_BASE_URL } from "./config";
 import { Question, JobRole } from "@/types/interview";
 
@@ -353,11 +353,8 @@ export async function getJobs(
 
     const rawData = await parseJson<Record<string, unknown>>(res);
 
-    const items = Array.isArray(rawData.items)
-      ? (rawData.items as Apijustjob[])
-      : Array.isArray(rawData)
-        ? (rawData as Apijustjob[])
-        : [];
+    // Use flexible extraction instead of checking only rawData.items
+    const items = extractItems(rawData);
 
     const count =
       typeof rawData.count === "number"
@@ -453,36 +450,46 @@ export async function fetchQuestionsFromApi(
   number: number,
   token?: string
 ): Promise<Question[]> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
   
-  const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
 
   try {
     const url = `${API_BASE_URL}/api/maekandex/academy?number=${number}&category=${encodeURIComponent(category)}`;
     const response = await fetch(url, {
       method: "GET",
-      headers, // ✅ FIXED: Pass the headers object directly
+      headers,
       cache: "no-store",
     });
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "");
-      throw new Error(
-        `API Error (${response.status}): ${errorText || response.statusText}`,
-      );
+      console.error(`API Error (${response.status}): ${errorText || response.statusText}`);
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error("Your session has expired or you are unauthorized.");
+      } else if (response.status === 404) {
+        throw new Error("We couldn't find any questions for this category.");
+      } else if (response.status >= 500) {
+        throw new Error("Our servers are currently experiencing issues. Please try again later.");
+      } else {
+        throw new Error("Unable to load questions right now.");
+      }
     }
 
     const data: ProxyResponse = await response.json();
 
     if (!data || !Array.isArray(data.questions)) {
-      throw new Error(
-        'Invalid response structure: "questions" array was not returned.',
-      );
+      console.error('Invalid response structure: "questions" array was not returned.', data);
+      throw new Error("We received invalid data from our servers.");
     }
 
-    // Map the API structure to the application's Question interface
     return data.questions.map((q, index) => ({
-      id: `q-${Date.now()}-${index}`, // Generate unique ID on the client
+      id: `q-${Date.now()}-${index}`,
       category: category,
       jobRole: category as JobRole,
       questionText: q.question,
@@ -491,9 +498,7 @@ export async function fetchQuestionsFromApi(
     }));
   } catch (error) {
     console.error("Error fetching questions:", error);
-    throw error instanceof Error
-      ? error
-      : new Error("An unexpected error occurred while fetching questions.");
+    if (error instanceof Error) throw error;
+    throw new Error("Unable to connect. Please check your internet connection.");
   }
 }
-

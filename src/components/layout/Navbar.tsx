@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   FiMenu,
   FiX,
@@ -13,6 +13,10 @@ import {
   FiLock,
   FiChevronDown,
   FiUser,
+  FiHome,
+  FiBriefcase,
+  FiInfo,
+  FiUserPlus,
 } from "react-icons/fi";
 import { FaWandMagicSparkles } from "react-icons/fa6";
 import { useAuth } from "@/context/AuthContext";
@@ -20,10 +24,9 @@ import Logo from "@/components/brand/Logo";
 import Image from "next/image";
 
 const navLinks = [
-  { label: "Home", href: "/" },
-  { label: "Find Jobs", href: "/jobs" },
-  { label: "About Us", href: "/about" },
-  // { label: "Contact", href: "/contact" },
+  { label: "Home", href: "/", icon: FiHome },
+  { label: "Find Jobs", href: "/jobs", icon: FiBriefcase },
+  { label: "About Us", href: "/about", icon: FiInfo },
 ];
 
 function formatPhoneNumber(phone?: string | null) {
@@ -48,7 +51,6 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
 
   const { isAuthenticated, logout, phone, ready, avatarUrl } = useAuth() as {
     isAuthenticated: boolean;
@@ -82,7 +84,6 @@ export default function Navbar() {
     logout();
     setProfileOpen(false);
     setMobileOpen(false);
-    // Hard refresh and redirect to home page
     window.location.href = "/";
   };
 
@@ -106,7 +107,7 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 h-16 sm:h-20 flex items-center bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.04) transition-all duration-200">
+      <header className="fixed top-0 left-0 right-0 z-50 h-16 sm:h-20 flex items-center bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.04)] transition-all duration-200">
         <div className="container-xl flex items-center justify-between gap-6 w-full px-4 sm:px-6">
           <div className="flex items-center shrink-0">
             {isAuthenticated ? (
@@ -135,19 +136,17 @@ export default function Navbar() {
               );
             })}
 
-            {ready && isAuthenticated && (
-              <Link
-                href="/prep-interview/practice"
-                className={`px-4 py-2 rounded-full text-xs font-semibold no-underline transition-all duration-200 flex items-center gap-2 ${
-                  isActive("/prep-interview")
-                    ? "bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-xs font-bold"
-                    : "text-emerald-700 hover:bg-emerald-50/60"
-                }`}
-              >
-                <FaWandMagicSparkles className="text-emerald-600 w-3.5 h-3.5 shrink-0 animate-pulse" />
-                <span>Prep Interview</span>
-              </Link>
-            )}
+            <Link
+              href="/prep-interview/practice"
+              className={`px-4 py-2 rounded-full text-xs font-semibold no-underline transition-all duration-200 flex items-center gap-2 ${
+                isActive("/prep-interview")
+                  ? "bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-xs font-bold"
+                  : "text-emerald-700 hover:bg-emerald-50/60"
+              }`}
+            >
+              <FaWandMagicSparkles className="text-emerald-600 w-3.5 h-3.5 shrink-0 animate-pulse" />
+              <span>Prep Interview</span>
+            </Link>
           </nav>
 
           {/* Right Action Menu */}
@@ -175,7 +174,7 @@ export default function Navbar() {
                 </button>
 
                 {profileOpen && (
-                  <div className="absolute right-0 top-[calc(100%+10px) w-72 bg-white rounded-2xl border border-slate-200/80 shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="absolute right-0 top-[calc(100%+10px)] w-72 bg-white rounded-2xl border border-slate-200/80 shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                     <div className="p-4 bg-linear-to-br from-slate-50 to-white border-b border-slate-100 flex items-center gap-3.5">
                       <Avatar size={42} />
                       <div className="min-w-0 flex-1">
@@ -253,7 +252,7 @@ export default function Navbar() {
       {/* Backdrop */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[49] transition-opacity"
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-[49] transition-opacity"
           onClick={() => setMobileOpen(false)}
           aria-hidden="true"
         />
@@ -261,11 +260,12 @@ export default function Navbar() {
 
       {/* Mobile Drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white/95 z-[50] shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white z-[50] shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${
           mobileOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-end p-5 border-b border-slate-100">
+        <div className="flex items-center justify-between p-4 border-b border-slate-100">
+          <Logo variant="dark" size="sm" />
           <button
             type="button"
             onClick={() => setMobileOpen(false)}
@@ -277,78 +277,94 @@ export default function Navbar() {
         </div>
 
         {ready && isAuthenticated && (
-          <div className="p-4 bg-slate-50 border-b border-slate-100 flex items-center gap-3">
-            <Avatar size={40} />
+          <div className="p-4 bg-slate-50/80 border-b border-slate-100 flex items-center gap-3.5">
+            <Avatar size={42} />
             <div className="min-w-0">
               <p className="text-xs font-bold text-ink truncate">
                 {formatPhoneNumber(phone)}
               </p>
-              <p className="text-[11px] font-medium text-emerald-700">Verified Member</p>
+              <p className="text-[11px] font-medium text-emerald-700 flex items-center gap-1 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                Verified Member
+              </p>
             </div>
           </div>
         )}
 
-        <nav className="p-4 space-y-1.5 flex-1 overflow-y-auto">
+        <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
           {navLinks.map((link) => {
             const active = isActive(link.href);
+            const Icon = link.icon;
             return (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileOpen(false)}
-                className={`flex items-center px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                className={`flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                   active
-                    ? "text-ink bg-slate-100 font-bold"
-                    : "text-text-muted hover:text-ink hover:bg-slate-50"
+                    ? "text-ink bg-slate-100/90 font-bold"
+                    : "text-slate-600 hover:text-ink hover:bg-slate-50"
                 }`}
               >
+                <span
+                  className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                    active ? "bg-white shadow-xs text-ink" : "bg-slate-100 text-slate-500"
+                  }`}
+                >
+                  <Icon size={17} />
+                </span>
                 {link.label}
               </Link>
             );
           })}
 
-          {ready && isAuthenticated && (
-            <>
-              <Link
-                href="/prep-interview/practice"
-                onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
-                  isActive("/prep-interview")
-                    ? "text-emerald-900 bg-emerald-50 font-bold"
-                    : "text-emerald-700 hover:bg-emerald-50/60"
-                }`}
-              >
-                <FaWandMagicSparkles size={16} className="text-emerald-600 shrink-0" />
-                Prep Interview
-              </Link>
+          {/* Prep Interview Highlighted Mobile Link */}
+          <Link
+            href="/prep-interview/practice"
+            onClick={() => setMobileOpen(false)}
+            className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
+              isActive("/prep-interview")
+                ? "bg-emerald-500/10 text-emerald-900 border-emerald-500/30 font-bold shadow-xs"
+                : "bg-emerald-50/60 text-emerald-800 border-emerald-200/60 hover:bg-emerald-100/60"
+            }`}
+          >
+            <div className="flex items-center gap-3.5">
+              <span className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <FaWandMagicSparkles size={16} className="animate-pulse" />
+              </span>
+              <span>Prep Interview</span>
+            </div>
+          </Link>
 
-              <Link
-                href="/change-password"
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-text-muted hover:text-ink hover:bg-slate-50 transition-all mt-4 border-t border-slate-100 pt-4"
-              >
-                <FiLock size={16} className="text-slate-500 shrink-0" />
-                Change Password
-              </Link>
-            </>
+          {ready && isAuthenticated && (
+            <Link
+              href="/change-password"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:text-ink hover:bg-slate-50 transition-all border-t border-slate-100 pt-3.5 mt-2"
+            >
+              <span className="w-9 h-9 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
+                <FiLock size={17} />
+              </span>
+              Change Password
+            </Link>
           )}
         </nav>
 
-        <div className="p-5 border-t border-slate-100 bg-slate-50/50">
+        <div className="p-4 border-t border-slate-100 bg-slate-50/50">
           {ready && isAuthenticated ? (
             <button
               type="button"
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100/80 transition-colors cursor-pointer"
+              className="w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl text-sm font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100/80 transition-colors cursor-pointer"
               onClick={handleLogout}
             >
               <FiLogOut size={16} /> Sign Out
             </button>
           ) : (
-            <div className="flex flex-col gap-2.5">
+            <div className="flex flex-col gap-2">
               <Link
                 href="/login"
                 onClick={() => setMobileOpen(false)}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-bg-slate-800 bg-white transition-colors shadow-xs"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-slate-900 bg-white border border-slate-200 transition-colors shadow-xs"
               >
                 <FiLogIn size={16} /> Login
               </Link>
@@ -356,9 +372,9 @@ export default function Navbar() {
               <Link
                 href="/signup"
                 onClick={() => setMobileOpen(false)}
-                className="w-full flex items-center justify-center py-3 rounded-xl text-sm font-semibold text-text-muted bg-white border border-slate-200 hover:bg-slate-50 transition-colors"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white bg-slate-900 hover:bg-black transition-colors"
               >
-                Sign Up
+                <FiUserPlus size={16} /> Sign Up
               </Link>
             </div>
           )}
