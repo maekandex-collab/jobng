@@ -76,7 +76,7 @@ export default function HeroSection() {
             variants={fadeUp(0.05)} 
             initial="hidden" 
             animate="show" 
-            className="mb-5 inline-block"
+            className="mb-5 inline-block animate-bounce"
           >
             <Link
               href="/prep-interview/practice"

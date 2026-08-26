@@ -1,38 +1,99 @@
-/**
- * Helpers for handling the raw HTML that the job API returns in job
- * descriptions. The API sends markup like <b>, <i>, <p>, <br>, <span> (often
- * with stray attributes), so we either strip it to plain text for previews or
- * sanitise it to a small allowlist for full rendering.
- */
+// lib/html.ts
+import DOMPurify from "isomorphic-dompurify";
+import type { Apijustjob } from "@/lib/jobApi";
 
-const NAMED_ENTITIES: Record<string, string> = {
-  amp: "&",
-  lt: "<",
-  gt: ">",
-  quot: '"',
-  apos: "'",
-  nbsp: " ",
-  ndash: "–",
-  mdash: "—",
-  hellip: "…",
-  rsquo: "’",
-  lsquo: "‘",
-  rdquo: "”",
-  ldquo: "“",
-};
+/* ============================================================================
+   SECTION 1: DYNAMIC KEYWORD MODEL & TRAINING ENGINE
+   ============================================================================ */
 
-function decodeEntities(input: string): string {
-  return input.replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z0-9]+);/g, (match, body: string) => {
-    if (body[0] === "#") {
-      const isHex = body[1] === "x" || body[1] === "X";
-      const code = parseInt(isHex ? body.slice(2) : body.slice(1), isHex ? 16 : 10);
-      return Number.isFinite(code) ? String.fromCodePoint(code) : match;
-    }
-    return NAMED_ENTITIES[body.toLowerCase() ?? match];
-  });
+const BASE_SECTION_KEYWORDS = new Set<string>([
+  "OTHER REQUIREMENTS, ABILITIES FOR THE POSITION:",
+  "KEY QUALIFICATIONS & REQUIREMENTS",
+  "REQUIREMENTS FOR THE POSITION:",
+  "ABOUT THE COMPANY",
+  "KEY RESPONSIBILITIES:",
+  "KEY RESPONSIBILITIES",
+  "REQUIRED EDUCATION",
+  "REQUIRED SKILLS",
+  "WORK SCHEDULE:",
+  "JOB OVERVIEW",
+  "JOB SUMMARY",
+  "DEPARTMENT",
+  "LOCATION",
+  "SALARY:",
+  "BENEFITS",
+  "WHAT WE OFFER",
+  "HOW TO APPLY",
+  "DUTIES AND RESPONSIBILITIES",
+  "MINIMUM QUALIFICATIONS",
+]);
+
+const dynamicKeywords = new Set<string>(BASE_SECTION_KEYWORDS);
+const candidateHeaderFrequency = new Map<string, number>();
+
+function normalizeKeyword(text: string): string {
+  return text.trim().toUpperCase();
 }
 
-/** Strip all HTML tags and collapse whitespace into a clean plain-text string. */
+/**
+ * Trains the parser dynamically by analyzing fetched job descriptions.
+ */
+export function trainOnJobDescriptions(jobs: Apijustjob[]): void {
+  const MIN_OCCURRENCE_THRESHOLD = 2;
+
+  for (const job of jobs) {
+    if (!job.description) continue;
+
+    const lines = job.description.split(/\r?\n/);
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.length < 3 || trimmed.length > 50) continue;
+
+      const endsWithColon = /^[A-Za-z0-9\s&/-]+:$/i.test(trimmed);
+      const isAllCaps = /^[A-Z0-9\s&/-]{4,40}$/.test(trimmed);
+      const isTitleCaseHeader = /^[A-Z][a-zA-B0-9\s&/-]{3,35}$/.test(trimmed) && !trimmed.endsWith(".");
+
+      if (endsWithColon || isAllCaps || isTitleCaseHeader) {
+        const normalized = normalizeKeyword(trimmed);
+        const currentCount = (candidateHeaderFrequency.get(normalized) || 0) + 1;
+        candidateHeaderFrequency.set(normalized, currentCount);
+
+        if (currentCount >= MIN_OCCURRENCE_THRESHOLD) {
+          dynamicKeywords.add(normalized);
+        }
+      }
+    }
+  }
+}
+
+function getSortedKeywords(): string[] {
+  return Array.from(dynamicKeywords).sort((a, b) => b.length - a.length);
+}
+
+/* ============================================================================
+   SECTION 2: HTML PARSING & SANITIZATION UTILITIES
+   ============================================================================ */
+
+function decodeHtmlEntities(html: string): string {
+  if (!html) return "";
+  if (typeof window === "undefined") {
+    return html
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&amp;/g, "&");
+  }
+  const txt = document.createElement("textarea");
+  txt.innerHTML = html;
+  return txt.value;
+}
+
+function containsHtmlTags(text: string): boolean {
+  return /<[a-z][\s\S]*>/i.test(text);
+}
+
 export function stripHtml(html: string | null | undefined): string {
   if (!html) return "";
   const text = html
@@ -40,47 +101,73 @@ export function stripHtml(html: string | null | undefined): string {
     .replace(/<[^>]*>/g, "")
     .replace(/\s+/g, " ")
     .trim();
-  return decodeEntities(text);
+
+  return decodeHtmlEntities(text);
 }
 
-const ALLOWED_TAGS = new Set([
-  "b", "strong", "i", "em", "u", "br", "p", "ul", "ol", "li",
-  "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "a", "span",
-]);
+export function parseUnstructuredJobText(rawText: string): string {
+  if (!rawText) return "";
 
-/**
- * Sanitise API HTML to a safe allowlist: keeps basic formatting tags, drops
- * everything else (scripts, inline handlers, style, stray attributes). Only
- * <a> keeps a validated href.
- */
-export function sanitizeHtml(html: string | null | undefined): string {
-  if (!html) return "";
+  let text = rawText.trim();
+  const sortedKeywords = getSortedKeywords();
 
-  // FIX: Separate removal of dangerous blocks to ensure self-closing instances do not swallow text
-  let out = html
-    .replace(/<\s*(script|style|iframe|object|embed|link|meta)[^>]*\/>/gi, "")
-    .replace(/<\s*(script|style|iframe|object|embed|link|meta)[\s\S]*?<\/\s*\1\s*>/gi, "")
-    .replace(/<\s*(script|style|iframe|object|embed|link|meta)[^>]*>/gi, "");
-
-  out = out.replace(/<\s*(\/?)\s*([a-zA-Z0-9]+)([^>]*)>/g, (match, slash: string, tag: string, attrs: string) => {
-    const name = tag.toLowerCase();
-    if (!ALLOWED_TAGS.has(name)) return "";
-    if (slash === "/") return `</${name}>`;
-
-    if (name === "a") {
-      // FIX: Robust href extraction that safely handles single, double, or omitted attribute quotation configurations
-      const hrefMatch = attrs.match(/href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
-      const href = hrefMatch ? (hrefMatch[1] ?? hrefMatch[2] ?? hrefMatch[3] ?? "") : "";
-      
-      // Clean URL parameters validation tracking protocol
-      const safe = /^(https?:\/\/|mailto:|\/)/i.test(href.trim()) ? href.trim() : "";
-      return safe
-        ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">`
-        : "<a>";
-    }
-
-    return `<${name}>`;
+  sortedKeywords.forEach((keyword) => {
+    const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`(^|\\n|\\s{2,})(${escaped})`, "gi");
+    text = text.replace(regex, "\n\n<h3>$2</h3>\n");
   });
 
-  return out.trim();
+  text = text.replace(/(^|\n)([A-Z0-9\s&/-]{3,45}:)(?=\s|\n|$)/g, "\n\n<h3>$2</h3>\n");
+  text = text.replace(/•\s*/g, "\n* ");
+
+  const lines = text.split("\n").map((line) => line.trim()).filter(Boolean);
+  let htmlResult = "";
+  let inList = false;
+
+  lines.forEach((line) => {
+    if (line.startsWith("<h3>")) {
+      if (inList) {
+        htmlResult += "</ul>";
+        inList = false;
+      }
+      htmlResult += line;
+    } else if (line.startsWith("* ")) {
+      if (!inList) {
+        htmlResult += "<ul class='list-disc pl-5 my-3 space-y-1'>";
+        inList = true;
+      }
+      htmlResult += `<li>${line.replace("* ", "")}</li>`;
+    } else {
+      if (inList) {
+        htmlResult += "</ul>";
+        inList = false;
+      }
+      htmlResult += `<p class='mb-3 leading-relaxed'>${line}</p>`;
+    }
+  });
+
+  if (inList) htmlResult += "</ul>";
+
+  return htmlResult;
+}
+
+export function sanitizeHtml(content?: string | null): string {
+  if (!content) return "";
+
+  let processedContent = decodeHtmlEntities(content);
+
+  if (!containsHtmlTags(processedContent)) {
+    processedContent = parseUnstructuredJobText(processedContent);
+  }
+
+  return DOMPurify.sanitize(processedContent, {
+    ALLOWED_TAGS: [
+      "h1", "h2", "h3", "h4", "h5", "h6",
+      "p", "span", "div", "br", "hr",
+      "ul", "ol", "li",
+      "strong", "b", "em", "i", "u", "s", "sub", "sup",
+      "a", "blockquote", "code", "pre"
+    ],
+    ALLOWED_ATTR: ["href", "target", "rel", "class"],
+  });
 }

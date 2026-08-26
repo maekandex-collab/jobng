@@ -15,12 +15,19 @@ import {
   FiChevronDown,
 } from "react-icons/fi";
 import JobCard from "@/components/shared/JobCard";
-import JobCardSkeleton from "@/components/shared/JobCardSkeleton";
+import JobCardSkeleton, { shimmer } from "@/components/shared/JobCardSkeleton";
 import PageLoader from "@/components/shared/PageLoader";
 import { authHeaders } from "@/lib/auth-client";
 import { Apijustjob } from "@/lib/jobApi";
 
-const CATEGORY_OPTIONS = ["Remote", "On-site", "Hybrid", "Full-time", "Part-time", "Internship"];
+const CATEGORY_OPTIONS = [
+  "Remote",
+  "On-site",
+  "Hybrid",
+  "Full-time",
+  "Part-time",
+  "Internship",
+];
 const PAGE_SIZE = 15;
 
 function JobsContent() {
@@ -30,8 +37,12 @@ function JobsContent() {
 
   // Input state vs executed search state
   const [keyword, setKeyword] = useState(searchParams.get("q") ?? "");
-  const [appliedKeyword, setAppliedKeyword] = useState(searchParams.get("q") ?? "");
-  const [category, setCategory] = useState(searchParams.get("category")?.toLowerCase() ?? "");
+  const [appliedKeyword, setAppliedKeyword] = useState(
+    searchParams.get("q") ?? "",
+  );
+  const [category, setCategory] = useState(
+    searchParams.get("category")?.toLowerCase() ?? "",
+  );
 
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [jobs, setJobs] = useState<Apijustjob[]>([]);
@@ -51,15 +62,18 @@ function JobsContent() {
   }, [searchParams]);
 
   // Sync changes back to the browser URL
-  const updateUrl = useCallback((q: string, cat: string) => {
-    const params = new URLSearchParams();
-    if (q) params.set("q", q);
-    if (cat) params.set("category", cat.toLowerCase());
+  const updateUrl = useCallback(
+    (q: string, cat: string) => {
+      const params = new URLSearchParams();
+      if (q) params.set("q", q);
+      if (cat) params.set("category", cat.toLowerCase());
 
-    const queryString = params.toString();
-    const targetUrl = queryString ? `${pathname}?${queryString}` : pathname;
-    router.replace(targetUrl, { scroll: false });
-  }, [pathname, router]);
+      const queryString = params.toString();
+      const targetUrl = queryString ? `${pathname}?${queryString}` : pathname;
+      router.replace(targetUrl, { scroll: false });
+    },
+    [pathname, router],
+  );
 
   const fetchJobs = useCallback(
     async (signal: AbortSignal) => {
@@ -107,12 +121,14 @@ function JobsContent() {
         setTotal(data.count ?? 0);
       } catch (err: unknown) {
         if (err instanceof Error && err.name === "AbortError") return;
-        setError("Network error occurred. Please check your connection and try again.");
+        setError(
+          "Network error occurred. Please check your connection and try again.",
+        );
       } finally {
         setLoading(false);
       }
     },
-    [appliedKeyword, category, page]
+    [appliedKeyword, category, page],
   );
 
   useEffect(() => {
@@ -168,7 +184,10 @@ function JobsContent() {
       <div className="sticky top-0 z-20 px-4 sm:px-6 lg:px-8 -mt-7 sm:-mt-9">
         <div className="container-xl max-w-7xl mx-auto">
           <div className="bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-2xl p-3.5 sm:p-5 shadow-xl shadow-slate-900/5 transition-all">
-            <form onSubmit={handleSearchSubmit} className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
+            <form
+              onSubmit={handleSearchSubmit}
+              className="flex flex-col md:flex-row gap-3 items-stretch md:items-center"
+            >
               <div className="relative flex-1 flex items-center bg-slate-50 hover:bg-slate-100/80 border border-slate-200 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10 rounded-xl transition-all duration-200 p-1">
                 <FiSearch size={20} className="text-slate-400 shrink-0 ml-3" />
                 <input
@@ -211,7 +230,8 @@ function JobsContent() {
                   onClick={resetFilters}
                   className="hidden md:inline-flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors shrink-0 border border-rose-200/60"
                 >
-                  <FiX size={14} /> Clear {activeFiltersCount} {activeFiltersCount === 1 ? "filter" : "filters"}
+                  <FiX size={14} /> Clear {activeFiltersCount}{" "}
+                  {activeFiltersCount === 1 ? "filter" : "filters"}
                 </button>
               )}
             </form>
@@ -262,10 +282,11 @@ function JobsContent() {
               <button
                 type="button"
                 onClick={() => handleCategoryChange("")}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 cursor-pointer ${category === ""
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                  category === ""
                     ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20"
                     : "bg-slate-100/80 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900"
-                  }`}
+                }`}
               >
                 All Roles
               </button>
@@ -278,10 +299,11 @@ function JobsContent() {
                     key={c}
                     type="button"
                     onClick={() => handleCategoryChange(isActive ? "" : lowerC)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 cursor-pointer border ${isActive
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 cursor-pointer border ${
+                      isActive
                         ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20"
                         : "bg-slate-100/80 text-slate-600 border-transparent hover:bg-slate-200/80 hover:text-slate-900"
-                      }`}
+                    }`}
                   >
                     {c}
                   </button>
@@ -326,7 +348,9 @@ function JobsContent() {
           </div>
         ) : error ? (
           <div className="text-center py-16 px-4 bg-white rounded-2xl border border-slate-200/80">
-            <p className="text-rose-500 font-semibold mb-4 text-sm sm:text-base">{error}</p>
+            <p className="text-rose-500 font-semibold mb-4 text-sm sm:text-base">
+              {error}
+            </p>
             <button
               type="button"
               onClick={() => fetchJobs(new AbortController().signal)}
@@ -339,10 +363,27 @@ function JobsContent() {
           <>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
               <p className="text-sm text-slate-600">
-                Showing <strong className="text-slate-900 font-semibold">{jobs.length}</strong>
-                {total > 0 && (
+                Showing{" "}
+                {total === 0 ? (
+                  <span
+                    style={{
+                      ...shimmer,
+                      width: 24,
+                      height: 16,
+                      borderRadius: 4,
+                      display: "inline-block",
+                      verticalAlign: "middle",
+                    }}
+                  />
+                ) : (
                   <>
-                    {" "}of <strong className="text-slate-900 font-semibold">{total.toLocaleString()}</strong>
+                    <strong className="font-semibold text-slate-900">
+                      {jobs.length}
+                    </strong>{" "}
+                    of{" "}
+                    <strong className="font-semibold text-slate-900">
+                      {total.toLocaleString()}
+                    </strong>
                   </>
                 )}
               </p>
@@ -354,34 +395,24 @@ function JobsContent() {
                     type="button"
                     aria-label={`Switch to ${mode} view`}
                     onClick={() => setViewMode(mode)}
-                    className={`p-2 rounded-lg transition-all flex items-center justify-center ${viewMode === mode
+                    className={`p-2 rounded-lg transition-all flex items-center justify-center ${
+                      viewMode === mode
                         ? "bg-white text-slate-900 shadow-sm"
                         : "text-slate-500 hover:text-slate-800"
-                      }`}
+                    }`}
                   >
-                    {mode === "list" ? <FiList size={16} /> : <FiSquare size={16} />}
+                    {mode === "list" ? (
+                      <FiList size={16} />
+                    ) : (
+                      <FiSquare size={16} />
+                    )}
                   </button>
                 ))}
               </div>
             </div>
 
             {jobs.length === 0 ? (
-              <div className="text-center py-16 px-4 bg-white rounded-2xl border border-slate-200/80">
-                <p className="text-4xl mb-3">🔍</p>
-                <h3 className="text-lg font-bold text-slate-900 mb-1">No jobs found</h3>
-                <p className="text-sm text-slate-600 mb-5">
-                  We couldn&apos;t find any jobs matching your search criteria.
-                </p>
-                {(appliedKeyword || category) && (
-                  <button
-                    type="button"
-                    onClick={resetFilters}
-                    className="jj-btn jj-btn--ghost px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-200 bg-slate-100 rounded-xl transition-colors"
-                  >
-                    Clear search & filters
-                  </button>
-                )}
-              </div>
+              <JobCardSkeleton variant={viewMode} />
             ) : (
               <div
                 className={

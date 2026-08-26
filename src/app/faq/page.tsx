@@ -55,7 +55,7 @@ function FAQItem({ q, a }: FAQItemProps) {
         aria-controls={contentId}
         className="w-full p-5 sm:p-6 flex items-center justify-between gap-4 bg-transparent border-none cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-(--gold)"
       >
-        <span className="text-base sm:text-lg font-extrabold text-(--ink) leading-snug">
+        <span className="text-base sm:text-lg font-extrabold  leading-snug">
           {q}
         </span>
         <div
@@ -74,7 +74,7 @@ function FAQItem({ q, a }: FAQItemProps) {
           id={contentId}
           className="px-5 sm:px-6 pb-6 pt-1 bg-(--gold-muted)/30 border-t border-[rgba(0,166,81,0.15) animate-fade-in-up"
         >
-          <p className="text-(--ink) text-sm sm:text-[15px] leading-relaxed pt-3 opacity-90">
+          <p className=" text-sm sm:text-[15px] leading-relaxed pt-3 opacity-90">
             {a}
           </p>
         </div>
@@ -126,14 +126,14 @@ export default function FAQPage() {
               placeholder="Search for questions or topics..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full py-4 pr-11 pl-12 rounded-(--radius-sm) border border-transparent bg-white text-(--ink) placeholder-(--text-faint) text-base shadow-lg focus:outline-none focus:ring-2 focus:ring-(--gold) transition-all"
+              className="w-full py-4 pr-11 pl-12 rounded-(--radius-sm) border border-transparent bg-white  placeholder-(--text-faint) text-base shadow-lg focus:outline-none focus:ring-2 focus:ring-(--gold) transition-all"
             />
             {search && (
               <button
                 type="button"
                 onClick={() => setSearch("")}
                 aria-label="Clear search"
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-(--text-faint) hover:text-(--ink) p-1 rounded-full transition-colors"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-(--text-faint) hover: p-1 rounded-full transition-colors"
               >
                 <FiX size={18} />
               </button>
@@ -155,7 +155,7 @@ export default function FAQPage() {
                 className={`px-5 py-2.5 text-sm font-bold rounded-(--radius-sm) cursor-pointer transition-all duration-200 ${
                   isActive
                     ? "bg-(--gold) text-white shadow-(--shadow-gold) scale-[1.02]"
-                    : "bg-(--surface-elevated) text-(--ink) border border-(--border) hover:bg-(--surface) hover:border-(--gold)/30"
+                    : "bg-(--surface-elevated)  border border-(--border) hover:bg-(--surface) hover:border-(--gold)/30"
                 }`}
               >
                 {cat}
@@ -172,7 +172,7 @@ export default function FAQPage() {
             <div className="w-14 h-14 rounded-full bg-(--surface) text-(--text-muted) flex items-center justify-center mx-auto mb-4">
               <FiSearch size={28} />
             </div>
-            <h3 className="text-xl font-extrabold text-(--ink) mb-1.5">
+            <h3 className="text-xl font-extrabold  mb-1.5">
               No results found
             </h3>
             <p className="text-sm text-(--text-muted) max-w-[360px] mx-auto">
@@ -182,7 +182,7 @@ export default function FAQPage() {
         ) : (
           filteredData.map((section) => (
             <div key={section.category} className="mb-10">
-              <h2 className="text-lg sm:text-xl font-extrabold text-(--ink) mb-4 flex items-center gap-2.5">
+              <h2 className="text-lg sm:text-xl font-extrabold  mb-4 flex items-center gap-2.5">
                 <span className="w-1.5 h-5 bg-(--gold) rounded-full inline-block" />
                 {section.category}
               </h2>
@@ -213,7 +213,7 @@ export default function FAQPage() {
           </p>
           {/* <Link
             href="/contact"
-            className="inline-flex items-center justify-center gap-2 font-bold text-sm bg-linear-to-r from-(--gold-light) via-(--gold) to-(--gold-hover) text-(--ink) shadow-(--shadow-gold) rounded-(--radius-sm) py-3.5 px-8 transition-all duration-200 hover:shadow-[0_12px_30px_rgba(0,166,81,0.3) hover:-translate-y-0.5 active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-2 font-bold text-sm bg-linear-to-r from-(--gold-light) via-(--gold) to-(--gold-hover)  shadow-(--shadow-gold) rounded-(--radius-sm) py-3.5 px-8 transition-all duration-200 hover:shadow-[0_12px_30px_rgba(0,166,81,0.3) hover:-translate-y-0.5 active:scale-[0.98]"
           >
             Contact Support
           </Link> */}

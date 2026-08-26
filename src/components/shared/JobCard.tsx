@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { FiBriefcase, FiCalendar, FiExternalLink, FiArrowUpRight } from "react-icons/fi";
-import { stripHtml } from "@/lib/html";
 import { Apijustjob } from "@/lib/jobApi";
 import { useSearchParams } from "next/navigation";
+import { stripHtml } from "@/lib/html";
 
 // Labels that should never be shown as work types/categories
 const DISALLOWED_CATEGORIES = ["feature", "featured", "internship"];

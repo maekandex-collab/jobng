@@ -154,7 +154,7 @@ export default function ForgotPasswordPage() {
           <div className="jj-login-form-wrap">
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 text-xs font-bold text-(--text-muted) hover:text-(--ink) uppercase tracking-wider mb-6 transition-colors"
+              className="inline-flex items-center gap-2 text-xs font-bold text-(--text-muted) hover: uppercase tracking-wider mb-6 transition-colors"
             >
               <FiArrowLeft size={16} />
               <span>Back to Login</span>
@@ -225,7 +225,7 @@ export default function ForgotPasswordPage() {
             {step === 2 && (
               <form onSubmit={handleVerifyOtp} className="jj-login-form">
                 <div className="flex items-center justify-between p-3 bg-(--surface) border border-(--border-strong) rounded-(--radius-sm) text-xs">
-                  <span className="font-mono text-(--ink) font-semibold">
+                  <span className="font-mono  font-semibold">
                     {countryCode} {phone}
                   </span>
                   <button
@@ -280,7 +280,7 @@ export default function ForgotPasswordPage() {
                     type="button"
                     onClick={handleResendOtp}
                     disabled={resending}
-                    className="inline-flex items-center gap-2 text-xs font-semibold text-(--text-muted) hover:text-(--ink) transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-2 text-xs font-semibold text-(--text-muted) hover: transition-colors disabled:opacity-50"
                   >
                     <FiRefreshCw
                       size={13}
@@ -297,7 +297,7 @@ export default function ForgotPasswordPage() {
               <form onSubmit={handleUpdatePassword} className="jj-login-form">
                 <div className="p-3 bg-(--surface) border border-(--border-strong) rounded-(--radius-sm) text-xs mb-2">
                   <span className="text-(--text-muted) block mb-0.5">Updating PIN for:</span>
-                  <span className="font-mono text-(--ink) font-bold">
+                  <span className="font-mono  font-bold">
                     {countryCode} {phone}
                   </span>
                 </div>
