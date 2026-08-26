@@ -11,7 +11,7 @@ export default function EmployerCard({ employer }: { employer: Employer }) {
           {employer.logo ? (
              <Image src={employer.logo} alt={employer.name} width={64} height={64} className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-2xl font-extrabold text-(--ink)">
+            <div className="w-full h-full flex items-center justify-center text-2xl font-extrabold ">
                {employer.name.charAt(0)}
             </div>
           )}
@@ -20,7 +20,7 @@ export default function EmployerCard({ employer }: { employer: Employer }) {
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-start flex-wrap gap-2 mb-1">
           <div>
-            <Link href={`/employers/${employer.id}`} className="text-lg font-extrabold text-(--ink) no-underline hover:text-(--gold) transition-colors">
+            <Link href={`/employers/${employer.id}`} className="text-lg font-extrabold  no-underline hover:text-(--gold) transition-colors">
               {employer.name}
             </Link>
             <p className="text-[15px] font-medium text-(--text-muted)">{employer.industry}</p>

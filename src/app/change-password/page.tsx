@@ -110,7 +110,7 @@ export default function UpdatePasswordPage() {
             <FiCheckCircle size={32} />
           </div>
 
-          <h2 className="text-2xl font-extrabold tracking-tight text-(--ink) mb-2">
+          <h2 className="text-2xl font-extrabold tracking-tight  mb-2">
             PIN Updated Successfully
           </h2>
           <p className="text-sm text-(--text-muted) leading-relaxed mb-8">
@@ -119,7 +119,7 @@ export default function UpdatePasswordPage() {
 
           <Link
             href="/login"
-            className="inline-flex items-center justify-center gap-2 w-full font-bold text-sm bg-linear-to-r from-(--gold-light) via-(--gold) to-(--gold-hover) text-(--ink) shadow-(--shadow-gold) rounded-(--radius-sm) py-3.5 px-6 transition-all duration-200 active:scale-[0.98] hover:shadow-[0_12px_30px_rgba(0,166,81,0.3) hover:-translate-y-0.5"
+            className="inline-flex items-center justify-center gap-2 w-full font-bold text-sm bg-linear-to-r from-(--gold-light) via-(--gold) to-(--gold-hover)  shadow-(--shadow-gold) rounded-(--radius-sm) py-3.5 px-6 transition-all duration-200 active:scale-[0.98] hover:shadow-[0_12px_30px_rgba(0,166,81,0.3) hover:-translate-y-0.5"
           >
             Return to Login <FiArrowRight size={16} />
           </Link>
@@ -175,7 +175,7 @@ export default function UpdatePasswordPage() {
                 value={formData.number}
                 onChange={handleChange}
                 disabled={loading}
-                className="w-full pl-10 pr-4 py-3 text-sm bg-(--surface) border border-(--border) rounded-(--radius-sm) text-(--ink) placeholder-(--text-faint) focus:outline-none focus:border-(--gold) focus:ring-1 focus:ring-(--gold) transition-all duration-200 disabled:opacity-50"
+                className="w-full pl-10 pr-4 py-3 text-sm bg-(--surface) border border-(--border) rounded-(--radius-sm)  placeholder-(--text-faint) focus:outline-none focus:border-(--gold) focus:ring-1 focus:ring-(--gold) transition-all duration-200 disabled:opacity-50"
               />
             </div>
           </div>
@@ -199,12 +199,12 @@ export default function UpdatePasswordPage() {
                 onChange={handleChange}
                 disabled={loading}
                 autoComplete="current-password"
-                className="w-full pl-10 pr-11 py-3 text-sm font-mono tracking-widest bg-(--surface) border border-(--border) rounded-(--radius-sm) text-(--ink) placeholder-(--text-faint) focus:outline-none focus:border-(--gold) focus:ring-1 focus:ring-(--gold) transition-all duration-200 disabled:opacity-50"
+                className="w-full pl-10 pr-11 py-3 text-sm font-mono tracking-widest bg-(--surface) border border-(--border) rounded-(--radius-sm)  placeholder-(--text-faint) focus:outline-none focus:border-(--gold) focus:ring-1 focus:ring-(--gold) transition-all duration-200 disabled:opacity-50"
               />
               <button
                 type="button"
                 onClick={() => setShowOldPin(!showOldPin)}
-                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-(--text-faint) hover:text-(--ink) transition-colors"
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-(--text-faint) hover: transition-colors"
                 tabIndex={-1}
               >
                 {showOldPin ? <FiEyeOff size={16} /> : <FiEye size={16} />}
@@ -231,12 +231,12 @@ export default function UpdatePasswordPage() {
                 onChange={handleChange}
                 disabled={loading}
                 autoComplete="new-password"
-                className="w-full pl-10 pr-11 py-3 text-sm font-mono tracking-widest bg-(--surface) border border-(--border) rounded-(--radius-sm) text-(--ink) placeholder-(--text-faint) focus:outline-none focus:border-(--gold) focus:ring-1 focus:ring-(--gold) transition-all duration-200 disabled:opacity-50"
+                className="w-full pl-10 pr-11 py-3 text-sm font-mono tracking-widest bg-(--surface) border border-(--border) rounded-(--radius-sm)  placeholder-(--text-faint) focus:outline-none focus:border-(--gold) focus:ring-1 focus:ring-(--gold) transition-all duration-200 disabled:opacity-50"
               />
               <button
                 type="button"
                 onClick={() => setShowPin(!showPin)}
-                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-(--text-faint) hover:text-(--ink) transition-colors"
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-(--text-faint) hover: transition-colors"
                 tabIndex={-1}
               >
                 {showPin ? <FiEyeOff size={16} /> : <FiEye size={16} />}
@@ -263,12 +263,12 @@ export default function UpdatePasswordPage() {
                 onChange={handleChange}
                 disabled={loading}
                 autoComplete="new-password"
-                className="w-full pl-10 pr-11 py-3 text-sm font-mono tracking-widest bg-(--surface) border border-(--border) rounded-(--radius-sm) text-(--ink) placeholder-(--text-faint) focus:outline-none focus:border-(--gold) focus:ring-1 focus:ring-(--gold) transition-all duration-200 disabled:opacity-50"
+                className="w-full pl-10 pr-11 py-3 text-sm font-mono tracking-widest bg-(--surface) border border-(--border) rounded-(--radius-sm)  placeholder-(--text-faint) focus:outline-none focus:border-(--gold) focus:ring-1 focus:ring-(--gold) transition-all duration-200 disabled:opacity-50"
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPin(!showConfirmPin)}
-                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-(--text-faint) hover:text-(--ink) transition-colors"
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-(--text-faint) hover: transition-colors"
                 tabIndex={-1}
               >
                 {showConfirmPin ? <FiEyeOff size={16} /> : <FiEye size={16} />}
@@ -301,7 +301,7 @@ export default function UpdatePasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full font-bold text-sm bg-linear-to-r from-(--gold-light) via-(--gold) to-(--gold-hover) text-(--ink) shadow-(--shadow-gold) rounded-(--radius-sm) py-3.5 px-6 transition-all duration-200 active:scale-[0.98] hover:shadow-[0_12px_30px_rgba(0,166,81,0.3) hover:-translate-y-0.5 disabled:opacity-60 disabled:pointer-events-none flex items-center justify-center gap-2 mt-2"
+            className="w-full font-bold text-sm bg-linear-to-r from-(--gold-light) via-(--gold) to-(--gold-hover)  shadow-(--shadow-gold) rounded-(--radius-sm) py-3.5 px-6 transition-all duration-200 active:scale-[0.98] hover:shadow-[0_12px_30px_rgba(0,166,81,0.3) hover:-translate-y-0.5 disabled:opacity-60 disabled:pointer-events-none flex items-center justify-center gap-2 mt-2"
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-(--ink) border-t-transparent rounded-full animate-spin" />

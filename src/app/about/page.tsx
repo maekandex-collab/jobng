@@ -57,7 +57,7 @@ export default function AboutPage() {
           </h1>
 
           <p className="mt-6 text-base sm:text-xl text-slate-300 max-w-2xl mx-auto font-normal leading-relaxed">
-            We aggregate verified opportunities across 100+ job portals across all 36 states of Nigeria and the Federal Capital Territory.
+            We aggregate verified opportunities across 100+ job portals across the whole world.
           </p>
         </div>
       </section>

@@ -477,7 +477,12 @@ export async function fetchQuestionsFromApi(
       console.error(`API Error (${response.status}): ${errorText || response.statusText}`);
 
       if (response.status === 401 || response.status === 403) {
-        throw new Error("Your session has expired or you are unauthorized.");
+        if (typeof window !== 'undefined') {
+          setTimeout(() => {
+            window.location.replace('/login');
+          }, 2000);
+        }
+        throw new Error("Unauthorized access. Please dial *7098# to sign up. Going to login...");
       } else if (response.status === 404) {
         throw new Error("We couldn't find any questions for this category.");
       } else if (response.status >= 500) {

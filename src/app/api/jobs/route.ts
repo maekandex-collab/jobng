@@ -1,13 +1,12 @@
+// app/api/jobs/route.ts
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 import { getJobs, Apijustjob } from "@/lib/jobApi";
+import { trainOnJobDescriptions } from "@/lib/html";
 
-const CACHE_TTL_MS = 60 * 1000; // 1 minute
-
-// In-memory cache variable declaration
+const CACHE_TTL_MS = 60 * 1000;
 let globalJobsCache: { items: Apijustjob[]; timestamp: number } | null = null;
 
-// Removed 'export' keyword so Next.js route handler type checks pass
 function extractItems(data: any): Apijustjob[] {
   if (Array.isArray(data)) return data;
   if (data && Array.isArray(data.items)) return data.items;
@@ -52,21 +51,16 @@ function filterJobs(
   return filtered;
 }
 
-// Fetch all jobs from upstream (paginating until complete or reaching safety limit)
 async function fetchAllUpstreamJobs(token?: string): Promise<Apijustjob[]> {
   const FETCH_PAGE_SIZE = 100;
   let page = 1;
   const allJobs: Apijustjob[] = [];
   let hasMore = true;
 
-  // Try fetching with the user's token first
   while (hasMore && page <= 10) {
     const result = await getJobs({ page, page_size: FETCH_PAGE_SIZE }, token);
 
-    if (!result.ok) {
-      console.warn(`Upstream job fetch failed with status ${result.status} using token.`);
-      break;
-    }
+    if (!result.ok) break;
 
     const items = extractItems(result.data);
     if (items.length === 0) break;
@@ -76,7 +70,6 @@ async function fetchAllUpstreamJobs(token?: string): Promise<Apijustjob[]> {
     else page++;
   }
 
-  // Fallback: If token was invalid/expired or returned 0 items, retry publicly without token
   if (allJobs.length === 0 && token) {
     page = 1;
     hasMore = true;
@@ -93,13 +86,17 @@ async function fetchAllUpstreamJobs(token?: string): Promise<Apijustjob[]> {
     }
   }
 
-  // Deduplicate by job_id
   const uniqueMap = new Map<string, Apijustjob>();
   for (const job of allJobs) {
     if (job.job_id) uniqueMap.set(job.job_id, job);
   }
 
-  return Array.from(uniqueMap.values());
+  const uniqueJobs = Array.from(uniqueMap.values());
+
+  // Train the HTML parser model on fetched jobs
+  trainOnJobDescriptions(uniqueJobs);
+
+  return uniqueJobs;
 }
 
 export async function GET(req: Request) {
@@ -116,11 +113,9 @@ export async function GET(req: Request) {
 
     const now = Date.now();
 
-    // Refresh cache if missing or expired
     if (!globalJobsCache || now - globalJobsCache.timestamp > CACHE_TTL_MS) {
       const allJobs = await fetchAllUpstreamJobs(token);
 
-      // ONLY update cache if upstream returned jobs (prevents caching empty state)
       if (allJobs.length > 0) {
         globalJobsCache = {
           items: allJobs,
@@ -130,8 +125,6 @@ export async function GET(req: Request) {
     }
 
     const sourceJobs = globalJobsCache?.items ?? [];
-
-    // Apply exact filter over ALL cached jobs
     const filteredJobs = filterJobs(sourceJobs, search, category);
 
     const totalCount = filteredJobs.length;
