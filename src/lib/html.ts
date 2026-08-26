@@ -1,5 +1,4 @@
-// lib/html.ts
-import DOMPurify from "isomorphic-dompurify";
+import sanitizeHtmlPackage from "sanitize-html";
 import type { Apijustjob } from "@/lib/jobApi";
 
 /* ============================================================================
@@ -35,9 +34,6 @@ function normalizeKeyword(text: string): string {
   return text.trim().toUpperCase();
 }
 
-/**
- * Trains the parser dynamically by analyzing fetched job descriptions.
- */
 export function trainOnJobDescriptions(jobs: Apijustjob[]): void {
   const MIN_OCCURRENCE_THRESHOLD = 2;
 
@@ -160,14 +156,17 @@ export function sanitizeHtml(content?: string | null): string {
     processedContent = parseUnstructuredJobText(processedContent);
   }
 
-  return DOMPurify.sanitize(processedContent, {
-    ALLOWED_TAGS: [
+  return sanitizeHtmlPackage(processedContent, {
+    allowedTags: [
       "h1", "h2", "h3", "h4", "h5", "h6",
       "p", "span", "div", "br", "hr",
       "ul", "ol", "li",
       "strong", "b", "em", "i", "u", "s", "sub", "sup",
       "a", "blockquote", "code", "pre"
     ],
-    ALLOWED_ATTR: ["href", "target", "rel", "class"],
+    allowedAttributes: {
+      a: ["href", "target", "rel", "class"],
+      "*": ["class"],
+    },
   });
 }

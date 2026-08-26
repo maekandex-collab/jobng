@@ -39,14 +39,22 @@ function PhoneInput({
   onCountryChange: (v: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const selected = countryCodes.find((c) => c.code === countryCode) ?? countryCodes[0];
+  const selected =
+    countryCodes.find((c) => c.code === countryCode) ?? countryCodes[0];
 
   return (
     <div className="jj-login-field">
-      <button type="button" className="jj-login-field__cc" onClick={() => setOpen(!open)}>
+      <button
+        type="button"
+        className="jj-login-field__cc"
+        onClick={() => setOpen(!open)}
+      >
         <span>{selected.flag}</span>
         <span>{selected.code}</span>
-        <FiChevronDown size={12} className={open ? "jj-login-field__chev--open" : ""} />
+        <FiChevronDown
+          size={12}
+          className={open ? "jj-login-field__chev--open" : ""}
+        />
       </button>
       {open && (
         <div className="jj-login-field__dropdown">
@@ -104,7 +112,9 @@ function PinInput({
           inputMode="numeric"
           pattern="[0-9]*"
           value={value}
-          onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, PIN_LENGTH))}
+          onChange={(e) =>
+            onChange(e.target.value.replace(/\D/g, "").slice(0, PIN_LENGTH))
+          }
           placeholder={placeholder}
           maxLength={PIN_LENGTH}
           className="!text-gray-800 jj-login-field__input jj-login-field__input--pin"
@@ -175,7 +185,10 @@ function LoginPageContent() {
       const data = await res.json();
 
       if (!res.ok || !data.ok) {
-        setError(data.error ?? (isLogin ? "Invalid phone or PIN." : "Failed to create account."));
+        setError(
+          data.error ??
+            (isLogin ? "Invalid phone or PIN." : "Failed to create account."),
+        );
         return;
       }
 
@@ -199,10 +212,10 @@ function LoginPageContent() {
     return (
       <div className="jj-login-page">
         <div className="jj-login-card jj-login-card--success">
-          <div className="jj-login-success-icon">
+          <div className="jj-login-success-icon !text-emerald-500">
             <FiCheckCircle size={32} />
           </div>
-          <h2 className="jj-login-success-title">
+          <h2 className="jj-login-success-title !text-emerald-400">
             {isLogin ? "You're in!" : "Account created!"}
           </h2>
           <p className="jj-login-success-sub">
@@ -210,7 +223,11 @@ function LoginPageContent() {
               ? "Welcome back. Redirecting you to jobs…"
               : "Welcome to job. Redirecting you to jobs…"}
           </p>
-          <Link href="/jobs" className="jj-btn jj-btn--gold" style={{ padding: "12px 28px" }}>
+          <Link
+            href="/jobs"
+            className="jj-btn !bg-emerald-500 hover:!bg-emerald-600 !text-white"
+            style={{ padding: "12px 28px" }}
+          >
             Browse Jobs <FiArrowRight size={16} />
           </Link>
         </div>
@@ -227,15 +244,21 @@ function LoginPageContent() {
           <div className="jj-login-panel__content">
             <Logo variant="dark" size="lg" href="/" />
             <h1 className="jj-login-panel__title">
-              Find your next Job<br />
-              <span>in Nigeria.</span>
+              Find your next Job
+              <br />
+              <span className="!text-emerald-400">in Nigeria.</span>
             </h1>
             <p className="jj-login-panel__sub">
-              Access curated jobs using your phone number and 4-digit PIN, or register directly via USSD.
+              Access curated jobs using your phone number and 4-digit PIN, or
+              register directly via USSD.
             </p>
             <div className="jj-login-panel__ussd">
-              <span className="jj-login-panel__ussd-code">*7098#</span>
-              <span className="jj-login-panel__ussd-label">Subscribe on any network</span>
+              <span className="jj-login-panel__ussd-code *!text-emerald-400">
+                *7098#
+              </span>
+              <span className="jj-login-panel__ussd-label">
+                Subscribe on any network
+              </span>
             </div>
           </div>
         </div>
@@ -263,11 +286,15 @@ function LoginPageContent() {
                   borderRadius: "7px",
                   fontSize: "14px",
                   fontWeight: 600,
-                  border: "none",
+                  border: isLogin
+                    ? "1px solid rgba(16, 185, 129, 0.4)"
+                    : "1px solid transparent",
                   cursor: "pointer",
                   transition: "all 0.2s ease",
-                  backgroundColor: isLogin ? "rgba(255,255,255,0.12)" : "transparent",
-                  color: isLogin ? "#fff" : "rgba(255,255,255,0.5)",
+                  backgroundColor: isLogin
+                    ? "rgba(16, 185, 129, 0.15)"
+                    : "transparent",
+                  color: isLogin ? "#34d399" : "rgba(255,255,255,0.5)",
                 }}
               >
                 Sign In
@@ -281,11 +308,15 @@ function LoginPageContent() {
                   borderRadius: "7px",
                   fontSize: "14px",
                   fontWeight: 600,
-                  border: "none",
+                  border: !isLogin
+                    ? "1px solid rgba(16, 185, 129, 0.4)"
+                    : "1px solid transparent",
                   cursor: "pointer",
                   transition: "all 0.2s ease",
-                  backgroundColor: !isLogin ? "rgba(255,255,255,0.12)" : "transparent",
-                  color: !isLogin ? "#fff" : "rgba(255,255,255,0.5)",
+                  backgroundColor: !isLogin
+                    ? "rgba(16, 185, 129, 0.15)"
+                    : "transparent",
+                  color: !isLogin ? "#34d399" : "rgba(255,255,255,0.5)",
                 }}
               >
                 Sign Up
@@ -293,7 +324,9 @@ function LoginPageContent() {
             </div>
 
             <div className="jj-login-form-head">
-              <h2>{isLogin ? "Welcome back" : "Create an account"}</h2>
+              <h2 className="!text-emerald-400">
+                {isLogin ? "Welcome back" : "Create an account"}
+              </h2>
               <p>
                 {isLogin
                   ? "Enter your phone number and 4-digit PIN"
@@ -346,7 +379,10 @@ function LoginPageContent() {
                     <input type="checkbox" defaultChecked />
                     Keep me signed in
                   </label>
-                  <Link href="/forgot-password" className="jj-login-forgot">
+                  <Link
+                    href="/forgot-password"
+                    className="jj-login-forgot hover:!text-emerald-400"
+                  >
                     Forgot PIN?
                   </Link>
                 </div>
@@ -355,7 +391,7 @@ function LoginPageContent() {
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className="jj-btn jj-btn--gold jj-login-submit"
+                className="jj-btn !bg-emerald-500 hover:!bg-emerald-600 disabled:!bg-emerald-500/50 !text-white jj-login-submit"
               >
                 {loading ? (
                   <>
@@ -372,9 +408,12 @@ function LoginPageContent() {
             </form>
 
             <div className="jj-login-subscribe">
-              <p className="jj-login-subscribe__title">Prefer USSD Registration?</p>
+              <p className="jj-login-subscribe__title">
+                Prefer USSD Registration?
+              </p>
               <p className="jj-login-subscribe__text">
-                Dial <strong>*7098#</strong> directly on your mobile phone to subscribe and create your account instantly via SMS/USSD.
+                Dial <strong>*7098#</strong> directly on your mobile phone to
+                subscribe and create your account instantly via SMS/USSD.
               </p>
             </div>
           </div>
@@ -390,7 +429,11 @@ export default function LoginPage() {
       fallback={
         <div
           className="jj-login-page"
-          style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
         >
           <span className="jj-loader jj-loader--compact">
             <span className="jj-loader__ring jj-loader__ring--compact" />
