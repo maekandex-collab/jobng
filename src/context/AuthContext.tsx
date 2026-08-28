@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import {
@@ -12,6 +13,7 @@ import {
   clearAuth,
   getStoredPhone,
   getStoredToken,
+  isTokenExpired,
   saveAuth,
 } from "@/lib/auth-client";
 
@@ -31,22 +33,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [phone, setPhone] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
-  useEffect(() => {
-    setToken(getStoredToken());
-    setPhone(getStoredPhone());
-    setReady(true);
+  const logout = useCallback(() => {
+    clearAuth();
+    setToken(null);
+    setPhone(null);
+    if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+      window.location.href = "/login?expired=true";
+    }
   }, []);
+
+  useEffect(() => {
+    const storedToken = getStoredToken();
+
+    // Check if token is already expired locally (if JWT)
+    if (storedToken && isTokenExpired(storedToken)) {
+      logout();
+    } else {
+      setToken(storedToken);
+      setPhone(getStoredPhone());
+    }
+    setReady(true);
+
+    // Global listener for 401 Unauthorized API responses
+    const handleUnauthorized = () => {
+      logout();
+    };
+
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+    return () => {
+      window.removeEventListener("auth:unauthorized", handleUnauthorized);
+    };
+  }, [logout]);
 
   const setSession = useCallback((newToken: string, newPhone: string) => {
     saveAuth(newToken, newPhone);
     setToken(newToken);
     setPhone(newPhone);
-  }, []);
-
-  const logout = useCallback(() => {
-    clearAuth();
-    setToken(null);
-    setPhone(null);
   }, []);
 
   const value = useMemo(

@@ -1,6 +1,7 @@
+/* eslint-disable react-hooks/preserve-manual-memoization */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -52,13 +53,22 @@ export default function JobDetailPage() {
   const router = useRouter();
 
   const idParam = params?.id;
-  const id = typeof idParam === "string" ? idParam : Array.isArray(idParam) ? idParam[0] : "";
+  const id =
+    typeof idParam === "string"
+      ? idParam
+      : Array.isArray(idParam)
+        ? idParam[0]
+        : "";
 
   const [job, setJob] = useState<Apijustjob | null>(null);
   const [loading, setLoading] = useState(true);
   const [needsAuth, setNeedsAuth] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const sanitizedDescription = useMemo(() => {
+    return job?.description ? sanitizeHtml(job.description) : "";
+  }, [job?.description]);
 
   useEffect(() => {
     if (!id) return;
@@ -133,15 +143,18 @@ export default function JobDetailPage() {
           <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-[#8DC63F] via-[#00A651] to-[#00863F]" />
 
           <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-6 shadow-inner">
-            <FiLogIn size={26} className="text-[#00A651] dark:text-emerald-400" />
+            <FiLogIn
+              size={26}
+              className="text-[#00A651] dark:text-emerald-400"
+            />
           </div>
 
           <h1 className="text-2xl font-extrabold tracking-tight  mb-3">
             Sign in Required
           </h1>
           <p className="text-sm text-(--text-muted) leading-relaxed mb-8">
-            Please log in to access full details for this role. To subscribe via USSD, dial{" "}
-            <strong className=" font-bold">*7098#</strong>.
+            Please log in to access full details for this role. To subscribe via
+            USSD, dial <strong className=" font-bold">*7098#</strong>.
           </p>
 
           <Link
@@ -192,20 +205,28 @@ export default function JobDetailPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           {/* Navigation & Action Bar */}
           <div className="flex items-center justify-between mb-8">
-            <Link
-              href="/jobs"
+            <button
+              type="button"
+              onClick={() => router.back()}
               className="inline-flex items-center gap-2 text-xs font-semibold tracking-wide text-white/80 hover:text-white transition-colors duration-200 group bg-white/10 hover:bg-white/15 border border-white/15 rounded-full px-4 py-2 backdrop-blur-sm"
             >
-              <FiArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform duration-200" />
+              <FiArrowLeft
+                size={14}
+                className="group-hover:-translate-x-1 transition-transform duration-200"
+              />
               Back to all jobs
-            </Link>
+            </button>
 
             <button
               type="button"
               onClick={handleShare}
               className="inline-flex items-center gap-2 text-xs font-semibold text-white/90 hover:text-white bg-white/10 hover:bg-white/20 border border-white/15 rounded-full px-4 py-2 transition-all duration-200 backdrop-blur-sm active:scale-[0.97] cursor-pointer"
             >
-              {copied ? <FiCheck size={14} className="text-emerald-200" /> : <FiShare2 size={14} />}
+              {copied ? (
+                <FiCheck size={14} className="text-emerald-200" />
+              ) : (
+                <FiShare2 size={14} />
+              )}
               <span>{copied ? "Link Copied" : "Share Job"}</span>
             </button>
           </div>
@@ -229,15 +250,19 @@ export default function JobDetailPage() {
                   {title}
                 </h1>
 
-                <p className="text-base font-medium text-white/80">{companyName}</p>
+                <p className="text-base font-medium text-white/80">
+                  {companyName}
+                </p>
 
                 {/* Meta Attributes */}
                 <div className="flex flex-wrap gap-2.5 pt-2">
                   <span className="inline-flex items-center gap-1.5 text-xs font-medium text-white/90 bg-white/10 border border-white/15 rounded-lg px-3.5 py-1.5 backdrop-blur-sm shadow-sm">
-                    <FiBriefcase size={13} className="text-emerald-200" /> {job.category ?? "General"}
+                    <FiBriefcase size={13} className="text-emerald-200" />{" "}
+                    {job.category ?? "General"}
                   </span>
                   <span className="inline-flex items-center gap-1.5 text-xs font-medium text-white/90 bg-white/10 border border-white/15 rounded-lg px-3.5 py-1.5 backdrop-blur-sm shadow-sm">
-                    <FiCalendar size={13} className="text-emerald-200" /> {formatDate(job.created_at)}
+                    <FiCalendar size={13} className="text-emerald-200" />{" "}
+                    {formatDate(job.created_at)}
                   </span>
                 </div>
               </div>
@@ -272,7 +297,7 @@ export default function JobDetailPage() {
                     prose-li:mb-1.5
                     prose-a:text-[#00A651] dark:prose-a:text-emerald-400 prose-a:underline prose-a:underline-offset-4 prose-a:font-semibold hover:prose-a:text-[#00863F]
                     prose-blockquote:border-l-4 prose-blockquote:border-[#00A651] prose-blockquote:bg-(--surface) prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r-md prose-blockquote:italic"
-                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(job.description) }}
+                  dangerouslySetInnerHTML={{ __html: sanitizedDescription }}
                 />
               </div>
             ) : (
@@ -298,7 +323,9 @@ export default function JobDetailPage() {
                   className="inline-flex items-center gap-2 text-xs font-semibold text-[#00A651] dark:text-emerald-400 hover:text-[#00863F] dark:hover:text-emerald-300 transition-colors mb-6 group"
                 >
                   <FiGlobe size={14} />
-                  <span className="group-hover:underline underline-offset-2">Visit Official Website</span>
+                  <span className="group-hover:underline underline-offset-2">
+                    Visit Official Website
+                  </span>
                 </a>
               )}
 
@@ -316,7 +343,8 @@ export default function JobDetailPage() {
                 ) : (
                   <div className="bg-(--surface) border border-(--border) rounded-(--radius-sm) p-4 text-center">
                     <p className="text-xs font-medium text-(--text-muted) leading-relaxed">
-                      Direct online application link is unavailable. Please check the company website to apply.
+                      Direct online application link is unavailable. Please
+                      check the company website to apply.
                     </p>
                   </div>
                 )}

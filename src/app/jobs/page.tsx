@@ -13,6 +13,7 @@ import {
   FiRefreshCw,
   FiSliders,
   FiChevronDown,
+  FiBriefcase,
 } from "react-icons/fi";
 import JobCard from "@/components/shared/JobCard";
 import JobCardSkeleton, { shimmer } from "@/components/shared/JobCardSkeleton";
@@ -35,38 +36,34 @@ function JobsContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Input state vs executed search state
-  const [keyword, setKeyword] = useState(searchParams.get("q") ?? "");
-  const [appliedKeyword, setAppliedKeyword] = useState(
-    searchParams.get("q") ?? "",
-  );
-  const [category, setCategory] = useState(
-    searchParams.get("category")?.toLowerCase() ?? "",
-  );
+  // Read query params directly from URL (Single source of truth)
+  const appliedKeyword = searchParams.get("q") ?? "";
+  const category = searchParams.get("category")?.toLowerCase() ?? "";
+  const pageParam = Number(searchParams.get("page") ?? "1");
+  const page = isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
 
+  // Local state only needed for controlled text input before form submit & UI controls
+  const [keyword, setKeyword] = useState(appliedKeyword);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+
   const [jobs, setJobs] = useState<Apijustjob[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [needsAuth, setNeedsAuth] = useState(false);
-  const [page, setPage] = useState(1);
+  const [retryTrigger, setRetryTrigger] = useState(0);
 
-  // Sync component state with URL params on mount or browser navigation
+  // Sync input field when URL query param changes directly (e.g. back button)
   useEffect(() => {
-    const qParam = searchParams.get("q") ?? "";
-    const catParam = searchParams.get("category")?.toLowerCase() ?? "";
-    setKeyword(qParam);
-    setAppliedKeyword(qParam);
-    setCategory(catParam);
-  }, [searchParams]);
+    setKeyword(appliedKeyword);
+  }, [appliedKeyword]);
 
-  // Sync changes back to the browser URL
   const updateUrl = useCallback(
-    (q: string, cat: string) => {
+    (q: string, cat: string, p: number = 1) => {
       const params = new URLSearchParams();
       if (q) params.set("q", q);
       if (cat) params.set("category", cat.toLowerCase());
+      if (p > 1) params.set("page", String(p));
 
       const queryString = params.toString();
       const targetUrl = queryString ? `${pathname}?${queryString}` : pathname;
@@ -75,15 +72,16 @@ function JobsContent() {
     [pathname, router],
   );
 
-  const fetchJobs = useCallback(
-    async (signal: AbortSignal) => {
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function fetchJobs() {
       setLoading(true);
       setError("");
       setNeedsAuth(false);
       try {
         const headers = authHeaders();
 
-        // If there are no auth tokens in local/session storage, trigger authentication state directly
         if (!headers.Authorization && !headers.authorization) {
           setNeedsAuth(true);
           setJobs([]);
@@ -93,13 +91,13 @@ function JobsContent() {
 
         const qs = new URLSearchParams();
         if (appliedKeyword) qs.set("search", appliedKeyword);
-        if (category) qs.set("category", category.toLowerCase());
+        if (category) qs.set("category", category);
         qs.set("page", String(page));
         qs.set("page_size", String(PAGE_SIZE));
 
         const res = await fetch(`/api/jobs?${qs.toString()}`, {
           headers,
-          signal,
+          signal: controller.signal,
         });
         const data = await res.json();
 
@@ -121,43 +119,31 @@ function JobsContent() {
         setTotal(data.count ?? 0);
       } catch (err: unknown) {
         if (err instanceof Error && err.name === "AbortError") return;
-        setError(
-          "Network error occurred. Please check your connection and try again.",
-        );
+        setError("Network error occurred. Please check your connection.");
       } finally {
         setLoading(false);
       }
-    },
-    [appliedKeyword, category, page],
-  );
+    }
 
-  useEffect(() => {
-    const controller = new AbortController();
-    fetchJobs(controller.signal);
+    fetchJobs();
+
     return () => controller.abort();
-  }, [fetchJobs]);
+  }, [appliedKeyword, category, page, retryTrigger]);
 
   const handleSearchSubmit = (e?: FormEvent) => {
     if (e) e.preventDefault();
     const cleanKey = keyword.trim();
-    setAppliedKeyword(cleanKey);
-    setPage(1);
-    updateUrl(cleanKey, category);
+    updateUrl(cleanKey, category, 1);
   };
 
   const handleCategoryChange = (newCat: string) => {
     const normalizedCat = newCat.toLowerCase();
-    setCategory(normalizedCat);
-    setPage(1);
-    updateUrl(appliedKeyword, normalizedCat);
+    updateUrl(appliedKeyword, normalizedCat, 1);
   };
 
   const resetFilters = () => {
     setKeyword("");
-    setAppliedKeyword("");
-    setCategory("");
-    setPage(1);
-    updateUrl("", "");
+    updateUrl("", "", 1);
   };
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -166,8 +152,8 @@ function JobsContent() {
   return (
     <div className="jj-jobs-page min-h-screen bg-slate-50/60">
       {/* Hero Header */}
-      <div className="relative overflow-hidden bg-linear-to-br from-[#8DC63F] via-[#00A651] to-[#00863F] pt-10 pb-14 sm:pt-16 sm:pb-20 px-4 sm:px-6 lg:px-8">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops)) from-white/10 via-transparent to-transparent pointer-events-none" />
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#8DC63F] via-[#00A651] to-[#00863F] pt-10 pb-14 sm:pt-16 sm:pb-20 px-4 sm:px-6 lg:px-8">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-transparent pointer-events-none" />
         <div className="container-xl max-w-7xl mx-auto relative z-10">
           <h1 className="jj-jobs-hero__title text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
             Explore Opportunities
@@ -204,11 +190,7 @@ function JobsContent() {
                     type="button"
                     onClick={() => {
                       setKeyword("");
-                      if (appliedKeyword) {
-                        setAppliedKeyword("");
-                        setPage(1);
-                        updateUrl("", category);
-                      }
+                      if (appliedKeyword) resetFilters();
                     }}
                     className="mr-1 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition-all"
                   >
@@ -236,6 +218,7 @@ function JobsContent() {
               )}
             </form>
 
+            {/* Mobile Workplace Selector */}
             <div className="md:hidden mt-3 pt-3 border-t border-slate-100 flex items-center gap-2.5">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider shrink-0">
                 <FiSliders size={14} className="text-[#00A651]" />
@@ -273,6 +256,7 @@ function JobsContent() {
               )}
             </div>
 
+            {/* Desktop Workplace Categories */}
             <div className="hidden md:flex mt-3.5 pt-3.5 border-t border-slate-100 items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth py-0.5">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wider shrink-0 mr-1">
                 <FiSliders size={14} className="text-slate-400" />
@@ -353,8 +337,8 @@ function JobsContent() {
             </p>
             <button
               type="button"
-              onClick={() => fetchJobs(new AbortController().signal)}
-              className="jj-btn jj-btn--gold inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-[#00A651] hover:bg-[#00863F] rounded-xl transition-colors"
+              onClick={() => setRetryTrigger((prev) => prev + 1)}
+              className="jj-btn jj-btn--gold inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-[#00A651] hover:bg-[#00863F] rounded-xl transition-colors cursor-pointer"
             >
               <FiRefreshCw size={16} /> Try again
             </button>
@@ -395,7 +379,7 @@ function JobsContent() {
                     type="button"
                     aria-label={`Switch to ${mode} view`}
                     onClick={() => setViewMode(mode)}
-                    className={`p-2 rounded-lg transition-all flex items-center justify-center ${
+                    className={`p-2 rounded-lg transition-all flex items-center justify-center cursor-pointer ${
                       viewMode === mode
                         ? "bg-white text-slate-900 shadow-sm"
                         : "text-slate-500 hover:text-slate-800"
@@ -412,7 +396,27 @@ function JobsContent() {
             </div>
 
             {jobs.length === 0 ? (
-              <JobCardSkeleton variant={viewMode} />
+              <div className="text-center py-16 px-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+                <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">
+                  <FiBriefcase size={22} />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-1">
+                  No jobs found
+                </h3>
+                <p className="text-sm text-slate-500 mb-5 max-w-sm mx-auto">
+                  We couldn&apos;t find any roles matching your search criteria.
+                  Try adjusting your filters or search terms.
+                </p>
+                {activeFiltersCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={resetFilters}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <FiX size={14} /> Clear all filters
+                  </button>
+                )}
+              </div>
             ) : (
               <div
                 className={
@@ -432,8 +436,8 @@ function JobsContent() {
                 <button
                   type="button"
                   disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="jj-btn jj-btn--ghost min-h-[40px] px-4 py-2 text-sm font-medium text-slate-700 border border-slate-300 rounded-xl hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  onClick={() => updateUrl(appliedKeyword, category, page - 1)}
+                  className="jj-btn jj-btn--ghost min-h-[40px] px-4 py-2 text-sm font-medium text-slate-700 border border-slate-300 rounded-xl hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
                 >
                   Previous
                 </button>
@@ -443,8 +447,8 @@ function JobsContent() {
                 <button
                   type="button"
                   disabled={page >= totalPages}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className="jj-btn jj-btn--ghost min-h-[40px] px-4 py-2 text-sm font-medium text-slate-700 border border-slate-300 rounded-xl hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  onClick={() => updateUrl(appliedKeyword, category, page + 1)}
+                  className="jj-btn jj-btn--ghost min-h-[40px] px-4 py-2 text-sm font-medium text-slate-700 border border-slate-300 rounded-xl hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
                 >
                   Next
                 </button>

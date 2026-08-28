@@ -28,34 +28,37 @@ const BASE_SECTION_KEYWORDS = new Set<string>([
 ]);
 
 const dynamicKeywords = new Set<string>(BASE_SECTION_KEYWORDS);
-const candidateHeaderFrequency = new Map<string, number>();
 
-function normalizeKeyword(text: string): string {
-  return text.trim().toUpperCase();
-}
+// Single compiled regex pattern for fast header detection
+const HEADER_COLON_REGEX = /^[A-Za-z0-9\s&/-]+:$/i;
+const HEADER_CAPS_REGEX = /^[A-Z0-9\s&/-]{4,40}$/;
+const HEADER_TITLE_REGEX = /^[A-Z][a-zA-B0-9\s&/-]{3,35}$/;
 
 export function trainOnJobDescriptions(jobs: Apijustjob[]): void {
   const MIN_OCCURRENCE_THRESHOLD = 2;
+  // Local map per training cycle to prevent unbounded memory leaks
+  const candidateHeaderFrequency = new Map<string, number>();
 
-  for (const job of jobs) {
-    if (!job.description) continue;
+  for (let i = 0; i < jobs.length; i++) {
+    const desc = jobs[i]?.description;
+    if (!desc) continue;
 
-    const lines = job.description.split(/\r?\n/);
+    const lines = desc.split(/\r?\n/);
+    for (let j = 0; j < lines.length; j++) {
+      const trimmed = lines[j].trim();
+      if (trimmed.length < 3 || trimmed.length > 50) continue;
 
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.length < 3 || trimmed.length > 50) continue;
+      const isHeader =
+        HEADER_COLON_REGEX.test(trimmed) ||
+        HEADER_CAPS_REGEX.test(trimmed) ||
+        (HEADER_TITLE_REGEX.test(trimmed) && !trimmed.endsWith("."));
 
-      const endsWithColon = /^[A-Za-z0-9\s&/-]+:$/i.test(trimmed);
-      const isAllCaps = /^[A-Z0-9\s&/-]{4,40}$/.test(trimmed);
-      const isTitleCaseHeader = /^[A-Z][a-zA-B0-9\s&/-]{3,35}$/.test(trimmed) && !trimmed.endsWith(".");
+      if (isHeader) {
+        const normalized = trimmed.toUpperCase();
+        const count = (candidateHeaderFrequency.get(normalized) || 0) + 1;
+        candidateHeaderFrequency.set(normalized, count);
 
-      if (endsWithColon || isAllCaps || isTitleCaseHeader) {
-        const normalized = normalizeKeyword(trimmed);
-        const currentCount = (candidateHeaderFrequency.get(normalized) || 0) + 1;
-        candidateHeaderFrequency.set(normalized, currentCount);
-
-        if (currentCount >= MIN_OCCURRENCE_THRESHOLD) {
+        if (count >= MIN_OCCURRENCE_THRESHOLD) {
           dynamicKeywords.add(normalized);
         }
       }
@@ -73,17 +76,12 @@ function getSortedKeywords(): string[] {
 
 function decodeHtmlEntities(html: string): string {
   if (!html) return "";
-  if (typeof window === "undefined") {
-    return html
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/&amp;/g, "&");
-  }
-  const txt = document.createElement("textarea");
-  txt.innerHTML = html;
-  return txt.value;
+  return html
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&");
 }
 
 function containsHtmlTags(text: string): boolean {
@@ -120,7 +118,7 @@ export function parseUnstructuredJobText(rawText: string): string {
   let htmlResult = "";
   let inList = false;
 
-  lines.forEach((line) => {
+  for (const line of lines) {
     if (line.startsWith("<h3>")) {
       if (inList) {
         htmlResult += "</ul>";
@@ -140,7 +138,7 @@ export function parseUnstructuredJobText(rawText: string): string {
       }
       htmlResult += `<p class='mb-3 leading-relaxed'>${line}</p>`;
     }
-  });
+  }
 
   if (inList) htmlResult += "</ul>";
 

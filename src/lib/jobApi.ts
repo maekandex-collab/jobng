@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "./config";
 import { Question, JobRole } from "@/types/interview";
+import { fetchWithAuth, getStoredToken, notifyUnauthorized } from "@/lib/auth-client";
 
 interface ApiQuestion {
   question: string;
@@ -10,6 +11,7 @@ interface ApiQuestion {
 interface ProxyResponse {
   questions: ApiQuestion[];
 }
+
 export interface Apijustjob {
   job_id: string;
   job_title: string | null;
@@ -69,6 +71,7 @@ export function extractItems(data: Record<string, unknown>): Apijustjob[] {
   if (data && Array.isArray(data.results)) return data.results;
   return [];
 }
+
 export function extractError(
   data: Record<string, unknown> | null | undefined | unknown,
   fallback = "Something went wrong. Please try again.",
@@ -77,7 +80,7 @@ export function extractError(
 
   const record = data as Record<string, unknown>;
 
-  // 1. Direct string properties (Express, NestJS, Custom APIs)
+  // 1. Direct string properties
   if (typeof record.detail === "string") return record.detail;
   if (typeof record.error === "string") return record.error;
   if (typeof record.message === "string") return record.message;
@@ -96,7 +99,7 @@ export function extractError(
     }
   }
 
-  // 3. Field validation object maps (e.g., Django REST: { phone: ["Invalid number"] })
+  // 3. Field validation object maps
   for (const value of Object.values(record)) {
     if (typeof value === "string" && value.trim()) {
       return value;
@@ -122,7 +125,6 @@ export function extractToken(data: unknown): string | null {
 
   const record = data as Record<string, unknown>;
 
-  // Priority token key names across standard API responses
   const tokenKeys = [
     "access",
     "access_token",
@@ -133,7 +135,6 @@ export function extractToken(data: unknown): string | null {
     "key",
   ];
 
-  // 1. Top-level property extraction
   for (const key of tokenKeys) {
     const value = record[key];
     if (typeof value === "string" && value.trim()) {
@@ -141,7 +142,6 @@ export function extractToken(data: unknown): string | null {
     }
   }
 
-  // 2. Nested API wrapper inspection (e.g. response.data or response.auth)
   const wrapperKeys = ["data", "auth", "result", "tokens", "payload"];
   for (const wrapperKey of wrapperKeys) {
     const nested = record[wrapperKey];
@@ -154,14 +154,32 @@ export function extractToken(data: unknown): string | null {
   return null;
 }
 
-/**
- * Removes "Bearer " prefix and surrounding whitespace if present.
- */
 function sanitizeToken(token: string): string {
   return token
     .trim()
     .replace(/^Bearer\s+/i, "")
     .trim();
+}
+
+/**
+ * Helper to build headers with automatic Auth token injection
+ */
+function buildAuthHeaders(token?: string, extraHeaders: Record<string, string> = {}): Record<string, string> {
+  const activeToken = token || getStoredToken();
+  const headers: Record<string, string> = { ...extraHeaders };
+  if (activeToken) {
+    headers.Authorization = `Bearer ${activeToken}`;
+  }
+  return headers;
+}
+
+/**
+ * Helper to check 401 status and trigger local storage purging + re-login
+ */
+function checkUnauthorized(status: number): void {
+  if (status === 401) {
+    notifyUnauthorized();
+  }
 }
 
 async function parseJson<T = Record<string, unknown>>(
@@ -186,7 +204,7 @@ export async function registerUser(body: {
   pin: string;
   confirm_pin: string;
 }): Promise<ApiResult<AuthSuccessData>> {
-  const res = await fetch(`${API_BASE_URL}/api/justjob/create/user/`, {
+  const res = await fetchWithAuth(`${API_BASE_URL}/api/justjob/create/user/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -202,7 +220,7 @@ export async function loginUser(body: {
   number: string;
   pin: string;
 }): Promise<ApiResult<AuthSuccessData>> {
-  const res = await fetch(`${API_BASE_URL}/api/justjob/login/user/`, {
+  const res = await fetchWithAuth(`${API_BASE_URL}/api/justjob/login/user/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -217,7 +235,7 @@ export async function loginUser(body: {
 export async function forgotPassword(body: {
   phone_number: string;
 }): Promise<ApiResult> {
-  const res = await fetch(`${API_BASE_URL}/api/justjob/forgot/password/`, {
+  const res = await fetchWithAuth(`${API_BASE_URL}/api/justjob/forgot/password/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -229,16 +247,16 @@ export async function changePassword(
   body: { new_pin: string; old_pin: string },
   token?: string,
 ): Promise<ApiResult> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (token) headers.Authorization = `Bearer ${token}`;
+  const headers = buildAuthHeaders(token, { "Content-Type": "application/json" });
 
-  const res = await fetch(`${API_BASE_URL}/api/justjob/change/password/`, {
+  const res = await fetchWithAuth(`${API_BASE_URL}/api/justjob/change/password/`, {
     method: "POST",
     headers,
     body: JSON.stringify(body),
   });
+
+  checkUnauthorized(res.status);
+
   return { ok: res.ok, status: res.status, data: await parseJson(res) };
 }
 
@@ -246,7 +264,7 @@ export async function resetPassword(body: {
   phone_number: string;
   pin: string;
 }): Promise<ApiResult> {
-  const res = await fetch(`${API_BASE_URL}/api/justjob/reset/password/`, {
+  const res = await fetchWithAuth(`${API_BASE_URL}/api/justjob/reset/password/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -263,7 +281,7 @@ export async function updatePassword({
   pin: string;
   confirm_pin: string;
 }): Promise<UpdateApiResult> {
-  const res = await fetch(`${API_BASE_URL}/api/justjob/update/password/`, {
+  const res = await fetchWithAuth(`${API_BASE_URL}/api/justjob/update/password/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ number, pin, confirm_pin }),
@@ -285,7 +303,7 @@ export async function updatePassword({
 
 export async function getTotalJobs(): Promise<GetTotalJobsResponse> {
   try {
-    const result = await fetch(`${API_BASE_URL}/api/justjob/total_jobs`, {
+    const result = await fetchWithAuth(`${API_BASE_URL}/api/justjob/total_jobs`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
     });
@@ -348,18 +366,17 @@ export async function getJobs(
   if (params.page) qs.set("page", String(params.page));
   if (params.page_size) qs.set("page_size", String(params.page_size));
 
-  const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
+  const headers = buildAuthHeaders(token);
 
   try {
-    const res = await fetch(
+    const res = await fetchWithAuth(
       `${API_BASE_URL}/api/justjob/jobs/${qs.toString() ? `?${qs.toString()}` : ""}`,
       { headers, cache: "no-store" },
     );
 
-    const rawData = await parseJson<Record<string, unknown>>(res);
+    checkUnauthorized(res.status);
 
-    // Use flexible extraction instead of checking only rawData.items
+    const rawData = await parseJson<Record<string, unknown>>(res);
     const items = extractItems(rawData);
 
     const count =
@@ -394,14 +411,15 @@ export async function getSingleJob(
   const qs = new URLSearchParams();
   qs.set("job_id", justjobId);
 
-  const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
+  const headers = buildAuthHeaders(token);
 
   try {
-    const res = await fetch(
+    const res = await fetchWithAuth(
       `${API_BASE_URL}/api/justjob/single/job/?${qs.toString()}`,
-      { headers, cache: "no-store" },
+      { headers, next: {revalidate: 60} },
     );
+
+    checkUnauthorized(res.status);
 
     const rawData = await parseJson(res);
 
@@ -456,37 +474,28 @@ export async function fetchQuestionsFromApi(
   number: number,
   token?: string
 ): Promise<Question[]> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-  
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
+  const headers = buildAuthHeaders(token, { "Content-Type": "application/json" });
 
   try {
     const url = `${API_BASE_URL}/api/maekandex/academy?number=${number}&category=${encodeURIComponent(category)}`;
-    const response = await fetch(url, {
+    const response = await fetchWithAuth(url, {
       method: "GET",
       headers,
       cache: "no-store",
     });
 
     if (!response.ok) {
+      checkUnauthorized(response.status);
+
       const errorText = await response.text().catch(() => "");
       console.error(`API Error (${response.status}): ${errorText || response.statusText}`);
 
       if (response.status === 401 || response.status === 403) {
-        if (typeof window !== 'undefined') {
-          setTimeout(() => {
-            window.location.replace('/login');
-          }, 2000);
-        }
-        throw new Error("Unauthorized access. Please dial *7098# to sign up. Going to login...");
+        throw new Error("Unauthorized access. Token expired or invalid. Redirecting to login...");
       } else if (response.status === 404) {
         throw new Error("We couldn't find any questions for this category.");
       } else if (response.status >= 500) {
-        throw new Error("Our servers are currently experiencing issues. Please try again later.");
+        throw new Error("We are currently experiencing issues. Please try again later.");
       } else {
         throw new Error("Unable to load questions right now.");
       }
@@ -496,7 +505,7 @@ export async function fetchQuestionsFromApi(
 
     if (!data || !Array.isArray(data.questions)) {
       console.error('Invalid response structure: "questions" array was not returned.', data);
-      throw new Error("We received invalid data from our servers.");
+      throw new Error("Questions are not available for this.");
     }
 
     return data.questions.map((q, index) => ({
