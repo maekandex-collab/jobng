@@ -14,6 +14,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS=--max-old-space-size=1536
 ARG JUSTJOB_API_BASE_URL=https://mtn.lenhub.net
 ENV JUSTJOB_API_BASE_URL=$JUSTJOB_API_BASE_URL
+ENV job_API_BASE_URL=$JUSTJOB_API_BASE_URL
 RUN npm run build \
   && npm prune --omit=dev
 
