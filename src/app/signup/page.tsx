@@ -1,27 +1,37 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { FiPhone, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
+import { normalizeNigerianPhone } from "@/lib/phone";
 
-export default function SignUpPage() {
+function SignUpContent() {
   const router = useRouter();
-//   const [name, setName] = useState("");
+  const searchParams = useSearchParams();
+  const phoneFromQuery = (
+    searchParams.get("num") ??
+    searchParams.get("phone") ??
+    ""
+  ).trim();
+
   const [phone, setPhone] = useState("");
+  const [phoneLocked, setPhoneLocked] = useState(false);
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [showPin, setShowPin] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const digits = phoneFromQuery.replace(/\D/g, "");
+    if (digits.length < 10) return;
+    setPhone(normalizeNigerianPhone(digits));
+    setPhoneLocked(true);
+  }, [phoneFromQuery]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-
-    // if (!name.trim()) {
-    //   setError("Enter your full name.");
-    //   return;
-    // }
 
     if (!/^\d{4}$/.test(pin)) {
       setError("PIN must be exactly 4 digits.");
@@ -31,7 +41,6 @@ export default function SignUpPage() {
       setError("PINs do not match.");
       return;
     }
-
 
     setLoading(true);
     try {
@@ -56,7 +65,6 @@ export default function SignUpPage() {
 
   return (
     <div className="jj-jobs-page">
-      {/* Hero */}
       <div className="jj-jobs-hero">
         <div className="container-xl">
           <h1 className="jj-jobs-hero__title">Create your account</h1>
@@ -69,36 +77,19 @@ export default function SignUpPage() {
       <div className="container-xl" style={{ padding: "3rem 0 5rem", display: "flex", justifyContent: "center" }}>
         <div className="jj-card" style={{ maxWidth: 440, width: "100%", padding: "2.5rem" }}>
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {/* <div className="jj-jobs-search">
-              <FiUser size={16} style={{ color: "var(--gold-hover)", flexShrink: 0 }} />
-              <input
-                type="text"
-                placeholder="Full name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                autoComplete="name"
-                style={{
-                  flex: 1,
-                  border: "none",
-                  outline: "none",
-                  background: "transparent",
-                  fontSize: "0.9375rem",
-                  color: "var(--text)",
-                  padding: "12px 0",
-                }}
-              />
-            </div> */}
-
             <div className="jj-jobs-search">
               <FiPhone size={16} style={{ color: "var(--gold-hover)", flexShrink: 0 }} />
               <input
                 type="tel"
                 placeholder="Phone number (e.g. 0803...)"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => {
+                  if (!phoneLocked) setPhone(e.target.value);
+                }}
                 required
+                readOnly={phoneLocked}
                 autoComplete="tel"
+                aria-label="Phone number"
                 style={{
                   flex: 1,
                   border: "none",
@@ -107,9 +98,16 @@ export default function SignUpPage() {
                   fontSize: "0.9375rem",
                   color: "var(--text)",
                   padding: "12px 0",
+                  opacity: phoneLocked ? 0.9 : 1,
+                  cursor: phoneLocked ? "not-allowed" : "text",
                 }}
               />
             </div>
+            {phoneLocked ? (
+              <p style={{ margin: "-6px 0 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                This number came from your subscription link and cannot be changed.
+              </p>
+            ) : null}
 
             <div className="jj-jobs-search">
               <FiLock size={16} style={{ color: "var(--gold-hover)", flexShrink: 0 }} />
@@ -188,5 +186,23 @@ export default function SignUpPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="jj-jobs-page">
+          <div className="jj-jobs-hero">
+            <div className="container-xl">
+              <h1 className="jj-jobs-hero__title">Create your account</h1>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <SignUpContent />
+    </Suspense>
   );
 }
