@@ -1,25 +1,58 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
-import { getJobs, Apijustjob } from "@/lib/jobApi";
-import { trainOnJobDescriptions } from "@/lib/html";
+import { getJobs, extractError, Apijustjob } from "@/lib/jobApi";
 
-// Cache duration: 5 minutes stale threshold, Background update
-const CACHE_TTL_MS = 5 * 60 * 1000;
-
-interface CacheStore {
+interface GlobalCache {
   items: Apijustjob[];
   timestamp: number;
-  isUpdating: boolean;
+  authed: boolean;
 }
 
-let globalJobsCache: CacheStore | null = null;
+const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes
+let globalJobsCache: GlobalCache | null = null;
 
 function extractItems(data: any): Apijustjob[] {
   if (Array.isArray(data)) return data;
-  if (data?.items && Array.isArray(data.items)) return data.items;
-  if (data?.data && Array.isArray(data.data)) return data.data;
-  if (data?.results && Array.isArray(data.results)) return data.results;
+  if (data && Array.isArray(data.items)) return data.items;
+  if (data && Array.isArray(data.data)) return data.data;
+  if (data && Array.isArray(data.results)) return data.results;
   return [];
+}
+
+// Fetch all jobs from upstream (paginating until complete or reaching safety limit)
+async function fetchAllUpstreamJobs(token?: string): Promise<Apijustjob[]> {
+  const FETCH_PAGE_SIZE = 100;
+  let page = 1;
+  const allJobs: Apijustjob[] = [];
+  let hasMore = true;
+
+  while (hasMore && page <= 10) { // Fetch up to 1,000 jobs
+    const result = await getJobs(
+      { page, page_size: FETCH_PAGE_SIZE },
+      token
+    );
+
+    if (!result.ok) break;
+
+    const items = extractItems(result.data);
+    if (items.length === 0) break;
+
+    allJobs.push(...items);
+
+    if (items.length < FETCH_PAGE_SIZE) {
+      hasMore = false;
+    } else {
+      page++;
+    }
+  }
+
+  // Deduplicate by job_id
+  const uniqueMap = new Map<string, Apijustjob>();
+  for (const job of allJobs) {
+    if (job.job_id) uniqueMap.set(job.job_id, job);
+  }
+
+  return Array.from(uniqueMap.values());
 }
 
 function filterJobs(
@@ -27,109 +60,30 @@ function filterJobs(
   search?: string,
   category?: string
 ): Apijustjob[] {
-  if (!search && !category) return items;
+  let filtered = items;
 
-  const catTerm = category?.toLowerCase().trim();
-  const searchTerm = search?.toLowerCase().trim();
-
-  return items.filter((j) => {
-    const jCat = j.category?.toLowerCase() || "";
-    const jTitle = j.job_title?.toLowerCase() || "";
-    const jDesc = j.description?.toLowerCase() || "";
-    const jCompany = j.company_name?.toLowerCase() || "";
-
-    if (catTerm) {
-      const catMatch =
-        jCat === catTerm ||
-        jCat.includes(catTerm) ||
-        jTitle.includes(catTerm) ||
-        jDesc.includes(catTerm);
-      if (!catMatch) return false;
-    }
-
-    if (searchTerm) {
-      const searchMatch =
-        jTitle.includes(searchTerm) ||
-        jCompany.includes(searchTerm) ||
-        jCat.includes(searchTerm) ||
-        jDesc.includes(searchTerm);
-      if (!searchMatch) return false;
-    }
-
-    return true;
-  });
-}
-
-/**
- * Optimized upstream fetch using parallel requests (Promise.all)
- */
-async function fetchAllUpstreamJobs(token?: string): Promise<Apijustjob[]> {
-  const FETCH_PAGE_SIZE = 100;
-  const MAX_PAGES = 10;
-
-  // 1. Fetch Page 1 first
-  const page1Result = await getJobs({ page: 1, page_size: FETCH_PAGE_SIZE }, token);
-  if (!page1Result.ok) return [];
-
-  const page1Items = extractItems(page1Result.data);
-  if (page1Items.length === 0) return [];
-
-  const allJobs: Apijustjob[] = [...page1Items];
-
-  // 2. Fetch remaining pages 2..10 concurrently if Page 1 was full
-  if (page1Items.length === FETCH_PAGE_SIZE) {
-    const pagePromises = [];
-    for (let page = 2; page <= MAX_PAGES; page++) {
-      pagePromises.push(getJobs({ page, page_size: FETCH_PAGE_SIZE }, token));
-    }
-
-    const results = await Promise.allSettled(pagePromises);
-
-    for (const res of results) {
-      if (res.status === "fulfilled" && res.value.ok) {
-        const items = extractItems(res.value.data);
-        if (items.length > 0) allJobs.push(...items);
-      }
-    }
+  if (category) {
+    const catTerm = category.toLowerCase().trim();
+    filtered = filtered.filter((j) => {
+      const jCat = j.category?.toLowerCase().trim() || "";
+      const jTitle = j.job_title?.toLowerCase() || "";
+      const jDesc = j.description?.toLowerCase() || "";
+      return jCat === catTerm || jCat.includes(catTerm) || jTitle.includes(catTerm) || jDesc.includes(catTerm);
+    });
   }
 
-  // Deduplicate items
-  const uniqueMap = new Map<string, Apijustjob>();
-  for (const job of allJobs) {
-    if (job.job_id) uniqueMap.set(job.job_id, job);
+  if (search) {
+    const searchTerm = search.toLowerCase().trim();
+    filtered = filtered.filter((j) => {
+      const titleMatch = j.job_title?.toLowerCase().includes(searchTerm);
+      const companyMatch = j.company_name?.toLowerCase().includes(searchTerm);
+      const categoryMatch = j.category?.toLowerCase().includes(searchTerm);
+      const descMatch = j.description?.toLowerCase().includes(searchTerm);
+      return titleMatch || companyMatch || categoryMatch || descMatch;
+    });
   }
 
-  const uniqueJobs = Array.from(uniqueMap.values());
-
-  // Asynchronously schedule training so it doesn't block CPU on request
-  setImmediate(() => {
-    trainOnJobDescriptions(uniqueJobs);
-  });
-
-  return uniqueJobs;
-}
-
-/**
- * Revalidates cache in background without blocking current user request
- */
-async function revalidateCacheInBackground(token?: string) {
-  if (!globalJobsCache || globalJobsCache.isUpdating) return;
-  globalJobsCache.isUpdating = true;
-
-  try {
-    const freshJobs = await fetchAllUpstreamJobs(token);
-    if (freshJobs.length > 0) {
-      globalJobsCache = {
-        items: freshJobs,
-        timestamp: Date.now(),
-        isUpdating: false,
-      };
-    }
-  } catch (err) {
-    console.error("Background cache revalidation failed:", err);
-  } finally {
-    if (globalJobsCache) globalJobsCache.isUpdating = false;
-  }
+  return filtered;
 }
 
 export async function GET(req: Request) {
@@ -143,43 +97,61 @@ export async function GET(req: Request) {
 
     const authHeader = req.headers.get("authorization") ?? undefined;
     const token = authHeader?.replace(/^Bearer\s+/i, "");
+    const isAuthed = Boolean(token);
 
-    const now = Date.now();
-    const isCacheExpired =
-      !globalJobsCache || now - globalJobsCache.timestamp > CACHE_TTL_MS;
-
-    // Cold boot: Must wait for initial fetch
-    if (!globalJobsCache) {
-      const initialJobs = await fetchAllUpstreamJobs(token);
-      globalJobsCache = {
-        items: initialJobs,
-        timestamp: now,
-        isUpdating: false,
-      };
-    } else if (isCacheExpired) {
-      // Stale cache available: Serve stale instantly & refresh in background
-      revalidateCacheInBackground(token);
+    // Unauthenticated callers cannot list jobs upstream — avoid poisoning the
+    // shared cache with an empty unauthorized response.
+    if (!isAuthed) {
+      return NextResponse.json(
+        {
+          ok: false,
+          requiresAuth: true,
+          error: "Sign in to browse jobs.",
+          items: [],
+          count: 0,
+        },
+        { status: 401 }
+      );
     }
 
-    const sourceJobs = globalJobsCache.items;
-    const filteredJobs = filterJobs(sourceJobs, search, category);
+    const now = Date.now();
 
+    // Refresh global cache if missing, expired, or was filled for a different auth mode
+    if (
+      !globalJobsCache ||
+      globalJobsCache.authed !== isAuthed ||
+      now - globalJobsCache.timestamp > CACHE_TTL_MS
+    ) {
+      const allJobs = await fetchAllUpstreamJobs(token);
+      // Only cache successful non-empty pulls; empty can be a transient upstream failure
+      if (allJobs.length > 0) {
+        globalJobsCache = {
+          items: allJobs,
+          timestamp: now,
+          authed: isAuthed,
+        };
+      } else {
+        return NextResponse.json({
+          ok: true,
+          items: [],
+          count: 0,
+        });
+      }
+    }
+
+    // Apply exact filter over ALL cached jobs
+    const filteredJobs = filterJobs(globalJobsCache.items, search, category);
+
+    // Paginate over filtered results
     const totalCount = filteredJobs.length;
     const startIdx = (page - 1) * pageSize;
     const pagedItems = filteredJobs.slice(startIdx, startIdx + pageSize);
 
-    return NextResponse.json(
-      {
-        ok: true,
-        items: pagedItems,
-        count: totalCount,
-      },
-      {
-        headers: {
-          "Cache-Control": "private, s-maxage=60, stale-while-revalidate=120",
-        },
-      }
-    );
+    return NextResponse.json({
+      ok: true,
+      items: pagedItems,
+      count: totalCount,
+    });
   } catch (error) {
     console.error("GET /api/jobs error:", error);
     return NextResponse.json(
