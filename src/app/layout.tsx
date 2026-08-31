@@ -19,31 +19,51 @@ const dmSans = DM_Sans({
   weight: ["400", "500", "600"],
 });
 
+const siteUrl = "https://www.justjobng.online";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
-    default: "jobNG – Find Your Next Job",
-    template: "%s | jobNG",
+    default: "JustJobNG – Find Your Next Job",
+    template: "%s | JustJobNG",
   },
   description:
-    "Nigeria's No. 1 job aggregrator platform. Browse live listings, apply to top Jobs, and grow your career. Subscribe via *7098#.",
-  keywords: "jobs Nigeria, careers, employment, job search, jobNG, MTN jobs",
+    "Nigeria's No. 1 job aggregator platform. Browse live listings, apply to top Jobs, and grow your career. Subscribe via *7098#.",
+  keywords: "jobs Nigeria, careers, employment, job search, JustJobNG, MTN jobs",
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
     apple: [{ url: "/favicon.svg", type: "image/svg+xml" }],
   },
   openGraph: {
-    title: "jobNG – Find Your Next Job",
-    description: "Browse live job listings across Nigeria.",
-    siteName: "jobNG",
+    title: "JustJobNG – Find Your Next Job in Nigeria",
+    description:
+      "Browse live listings, apply to top jobs, and grow your career. Subscribe via *7098#.",
+    url: siteUrl,
+    siteName: "JustJobNG",
+    locale: "en_NG",
     type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "JustJobNG – Nigeria's No. 1 Job Aggregator",
+        type: "image/png",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "JustJobNG – Find Your Next Job",
+    description:
+      "Browse live listings, apply to top jobs, and grow your career. Subscribe via *7098#.",
+    images: ["/og-image.png"],
   },
 };
 
 export const viewport: Viewport = {
   themeColor: "#0A0F1C",
 };
-
-// app/layout.tsx
 
 export default function RootLayout({
   children,
@@ -59,7 +79,6 @@ export default function RootLayout({
       <body className="font-body antialiased min-h-screen flex flex-col bg-(--ink) text-(--surface)">
         <AuthProvider>
           <Navbar />
-          {/* Added pt-(--spacing-nav-height) to push content below the fixed navbar */}
           <main className="grow pt-(--spacing-nav-height)">
             {children}
           </main>

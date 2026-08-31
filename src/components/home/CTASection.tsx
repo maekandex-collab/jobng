@@ -8,34 +8,39 @@ import { FaWandMagicSparkles } from "react-icons/fa6";
 export default function CTASection() {
   return (
     <section className="relative overflow-hidden bg-linear-to-br from-[#021f0f] via-[#052914] to-[#004220] py-20 lg:py-28 text-white select-none">
-      
       {/* 1. Ambient Animated Background Glows */}
       <motion.div
-        animate={{ 
-          scale: [1, 1.15, 1], 
+        animate={{
+          scale: [1, 1.15, 1],
           opacity: [0.2, 0.35, 0.2],
           x: [0, 20, 0],
-          y: [0, -15, 0]
+          y: [0, -15, 0],
         }}
         transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
         className="absolute -top-24 -right-24 w-80 h-80 sm:w-[450px] sm:h-[450px] bg-[#00A651]/25 rounded-full blur-[80px] pointer-events-none"
       />
       <motion.div
-        animate={{ 
-          scale: [1, 1.1, 1], 
+        animate={{
+          scale: [1, 1.1, 1],
           opacity: [0.15, 0.28, 0.15],
           x: [0, -20, 0],
-          y: [0, 15, 0]
+          y: [0, 15, 0],
         }}
-        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+        transition={{
+          duration: 12,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 2,
+        }}
         className="absolute -bottom-20 -left-20 w-72 h-72 sm:w-[380px] sm:h-[380px] bg-[#8DC63F]/20 rounded-full blur-[80px] pointer-events-none"
       />
 
       {/* 2. Grid Pattern Overlay with Gradient Fade */}
-      <div 
+      <div
         className="absolute inset-0 opacity-10 pointer-events-none"
         style={{
-          backgroundImage: "radial-gradient(circle, #ffffff 1px, transparent 1px)",
+          backgroundImage:
+            "radial-gradient(circle, #ffffff 1px, transparent 1px)",
           backgroundSize: "28px 28px",
         }}
       />
@@ -45,10 +50,8 @@ export default function CTASection() {
 
       {/* Main Container */}
       <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 relative z-10">
-        
         {/* Glassmorphic Container Card */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-10 lg:gap-16 bg-white/5 border border-white/10 rounded-3xl p-8 sm:p-12 lg:p-14 backdrop-blur-xl shadow-2xl relative overflow-hidden">
-          
           {/* Subtle Glass Inner Shimmer */}
           <div className="absolute -top-24 -left-24 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none" />
 
@@ -74,7 +77,10 @@ export default function CTASection() {
             </h2>
 
             <p className="text-base sm:text-lg text-white/80 leading-relaxed max-w-lg font-normal">
-              Join over 4 million professionals using jobNG. Browse live listings or dial <strong className="text-white font-bold">*7098#</strong> to get instant job alerts sent straight to your phone.
+              Join over 4 million professionals using JustJobNG. Browse live
+              listings or dial{" "}
+              <strong className="text-white font-bold">*7098#</strong> to get
+              instant job alerts sent straight to your phone.
             </p>
           </motion.div>
 
@@ -83,18 +89,29 @@ export default function CTASection() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+            transition={{
+              duration: 0.65,
+              ease: [0.16, 1, 0.3, 1],
+              delay: 0.15,
+            }}
             className="flex flex-col sm:flex-row lg:flex-col gap-4 w-full sm:w-auto shrink-0"
           >
             {/* Primary Action Button */}
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full sm:w-auto">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full sm:w-auto"
+            >
               <Link
                 href="/jobs"
                 className="group flex items-center justify-center gap-3 bg-white text-[#052914] hover:text-[#004220] font-extrabold text-base px-8 py-4 rounded-2xl shadow-xl hover:shadow-2xl hover:bg-slate-50 transition-all duration-300 w-full sm:w-auto text-center"
               >
                 <FiSearch size={18} className="text-[#00A651]" />
                 <span>Browse Jobs</span>
-                <FiArrowRight size={18} className="transition-transform duration-300 group-hover:translate-x-1" />
+                <FiArrowRight
+                  size={18}
+                  className="transition-transform duration-300 group-hover:translate-x-1"
+                />
               </Link>
             </motion.div>
 
@@ -104,11 +121,12 @@ export default function CTASection() {
                 <FiPhoneCall size={13} />
               </div>
               <p className="text-xs text-white/80 font-medium m-0">
-                Dial <strong className="text-[#8DC63F] font-black">*7098#</strong> on any phone
+                Dial{" "}
+                <strong className="text-[#8DC63F] font-black">*7098#</strong> on
+                any phone
               </p>
             </div>
           </motion.div>
-
         </div>
       </div>
     </section>

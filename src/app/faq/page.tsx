@@ -1,8 +1,12 @@
 "use client";
 
 import { useState, useId } from "react";
-import Link from "next/link";
-import { FiSearch, FiChevronDown, FiX, FiHelpCircle, FiMessageSquare } from "react-icons/fi";
+import {
+  FiSearch,
+  FiChevronDown,
+  FiX,
+  FiMessageSquare,
+} from "react-icons/fi";
 
 interface FAQItemProps {
   q: string;
@@ -96,7 +100,7 @@ export default function FAQPage() {
         (item) =>
           (item.q.toLowerCase().includes(search.toLowerCase()) ||
             item.a.toLowerCase().includes(search.toLowerCase())) &&
-          (activeTab === "All" || activeTab === section.category)
+          (activeTab === "All" || activeTab === section.category),
       ),
     }))
     .filter((section) => section.items.length > 0);
@@ -106,13 +110,14 @@ export default function FAQPage() {
       {/* Hero */}
       <section className="bg-(--ink) pt-[calc(var(--nav-height,80px)+2.5rem) pb-16 px-4 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_80%_at_100%_0%,rgba(0,166,81,0.12)_0%,transparent_60%),radial-gradient(ellipse_40%_60%_at_0%_100%,rgba(141,198,63,0.08)_0%,transparent_50%) pointer-events-none" />
-        
+
         <div className="container-xl relative text-center max-w-[720px] mx-auto">
           <h1 className="text-[clamp(2rem,5vw,3.25rem) font-extrabold text-white mb-3 -tracking-[0.02em] leading-[1.15]">
             Frequently Asked Questions
           </h1>
           <p className="text-white/75 text-base sm:text-lg max-w-[560px] mx-auto mb-8 font-normal leading-relaxed">
-            Everything you need to know about using jobNG on the web or via *7098#.
+            Everything you need to know about using JustJobNG on the web or via
+            *7098#.
           </p>
 
           {/* Search Box */}
@@ -172,11 +177,10 @@ export default function FAQPage() {
             <div className="w-14 h-14 rounded-full bg-(--surface) text-(--text-muted) flex items-center justify-center mx-auto mb-4">
               <FiSearch size={28} />
             </div>
-            <h3 className="text-xl font-extrabold  mb-1.5">
-              No results found
-            </h3>
+            <h3 className="text-xl font-extrabold  mb-1.5">No results found</h3>
             <p className="text-sm text-(--text-muted) max-w-[360px] mx-auto">
-              We couldn&apos;t find any questions matching &quot;{search}&quot;. Try adjusting your keywords or category filters.
+              We couldn&apos;t find any questions matching &quot;{search}&quot;.
+              Try adjusting your keywords or category filters.
             </p>
           </div>
         ) : (
@@ -200,7 +204,7 @@ export default function FAQPage() {
       <section className="container-xl max-w-[800px] mx-auto px-4 mt-12">
         <div className="bg-(--ink) py-12 px-6 sm:px-10 text-center rounded-(--radius-md) relative overflow-hidden shadow-xl border border-white/5">
           <div className="absolute -top-12 -right-12 w-40 h-40 bg-(--gold)/10 rounded-full blur-2xl pointer-events-none" />
-          
+
           <div className="w-12 h-12 rounded-2xl bg-white/10 text-emerald-300 flex items-center justify-center mx-auto mb-4 border border-white/10">
             <FiMessageSquare size={22} />
           </div>
@@ -209,7 +213,8 @@ export default function FAQPage() {
             Still have questions?
           </h2>
           <p className="text-white/70 text-sm sm:text-base max-w-[440px] mx-auto mb-8 font-normal leading-relaxed">
-            Our support team is ready to assist you with any questions or account inquiries.
+            Our support team is ready to assist you with any questions or
+            account inquiries.
           </p>
           {/* <Link
             href="/contact"

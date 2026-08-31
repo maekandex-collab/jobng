@@ -11,7 +11,9 @@ import {
 } from "react-icons/fi";
 
 export default function ContactPage() {
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -34,7 +36,9 @@ export default function ContactPage() {
         setStatus("success");
       } else {
         setStatus("error");
-        setErrorMsg(result.error || "An unexpected error occurred. Please try again.");
+        setErrorMsg(
+          result.error || "An unexpected error occurred. Please try again.",
+        );
       }
     } catch {
       setStatus("error");
@@ -53,7 +57,8 @@ export default function ContactPage() {
           </h1>
 
           <p className="mt-4 text-base sm:text-xl text-slate-300 max-w-xl mx-auto font-normal leading-relaxed">
-            Have questions or need assistance? Send us a message and our support team will respond promptly.
+            Have questions or need assistance? Send us a message and our support
+            team will respond promptly.
           </p>
         </div>
       </section>
@@ -61,10 +66,8 @@ export default function ContactPage() {
       {/* Main Content Layout */}
       <section className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 -mt-12 sm:-mt-16 relative z-20">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          
           {/* Info Sidebar (1 Column) */}
           <div className="flex flex-col gap-4 lg:col-span-1">
-            
             {/* Phone & USSD Card */}
             <div className="bg-white/90 backdrop-blur-xl border border-slate-200/80 p-6 rounded-3xl shadow-lg flex gap-4 items-start hover:border-slate-300 transition-all duration-200">
               <div className="w-12 h-12 rounded-2xl bg-[#00A651]/10 border border-[#00A651]/20 flex items-center justify-center text-[#00A651] shrink-0 text-xl font-bold">
@@ -75,7 +78,9 @@ export default function ContactPage() {
                   Phone & USSD
                 </h4>
                 <p className="text-slate-900 font-bold text-base leading-snug">
-                  <span className="text-[#00A651] font-mono font-extrabold text-lg block mb-0.5">*7098#</span>
+                  <span className="text-[#00A651] font-mono font-extrabold text-lg block mb-0.5">
+                    *7098#
+                  </span>
                   +234 801 234 5678
                 </p>
               </div>
@@ -91,7 +96,7 @@ export default function ContactPage() {
                   Direct Email
                 </h4>
                 <p className="text-slate-900 font-bold text-base">
-                  hello@jobng.com
+                  hello@JustJobNG.com
                 </p>
               </div>
             </div>
@@ -103,7 +108,8 @@ export default function ContactPage() {
               Send a Message
             </h2>
             <p className="text-slate-500 text-sm mb-8 font-normal">
-              Fill out the form below and our response team will get back to you within 24 hours.
+              Fill out the form below and our response team will get back to you
+              within 24 hours.
             </p>
 
             {status === "success" ? (
@@ -115,7 +121,8 @@ export default function ContactPage() {
                   Message Sent Successfully!
                 </h3>
                 <p className="text-slate-600 max-w-md mx-auto text-base leading-relaxed">
-                  Thank you for reaching out. A confirmation has been logged, and a support agent will get back to you within 24 hours.
+                  Thank you for reaching out. A confirmation has been logged,
+                  and a support agent will get back to you within 24 hours.
                 </p>
                 <button
                   type="button"
@@ -128,7 +135,6 @@ export default function ContactPage() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                
                 {/* Name & Email Row */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="flex flex-col gap-2">
@@ -212,11 +218,9 @@ export default function ContactPage() {
                     </>
                   )}
                 </button>
-
               </form>
             )}
           </div>
-
         </div>
       </section>
     </div>

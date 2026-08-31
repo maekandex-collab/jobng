@@ -11,8 +11,6 @@ import {
   FiEyeOff,
   FiChevronDown,
   FiArrowRight,
-  FiUserPlus,
-  FiLogIn,
 } from "react-icons/fi";
 import { useAuth } from "@/context/AuthContext";
 import Logo from "@/components/brand/Logo";
@@ -75,7 +73,7 @@ function PhoneInput({
           ))}
         </div>
       )}
-      <div className=" jj-login-field__input-wrap">
+      <div className="jj-login-field__input-wrap">
         <FiPhone size={15} className="jj-login-field__icon" />
         <input
           type="tel"
@@ -140,7 +138,6 @@ function LoginPageContent() {
   const callbackUrl = searchParams.get("callbackUrl") ?? "/jobs";
   const { setSession } = useAuth();
 
-  const [mode, setMode] = useState<"login" | "signup">("login");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -148,15 +145,8 @@ function LoginPageContent() {
   const [phone, setPhone] = useState("");
   const [country, setCountry] = useState("+234");
   const [pin, setPin] = useState("");
-  const [confirmPin, setConfirmPin] = useState("");
 
-  const isLogin = mode === "login";
-
-  const canSubmit =
-    phone.length >= 7 &&
-    pin.length === PIN_LENGTH &&
-    (isLogin || (confirmPin.length === PIN_LENGTH && pin === confirmPin)) &&
-    !loading;
+  const canSubmit = phone.length >= 7 && pin.length === PIN_LENGTH && !loading;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,17 +157,10 @@ function LoginPageContent() {
       return;
     }
 
-    if (!isLogin && pin !== confirmPin) {
-      setError("PINs do not match.");
-      return;
-    }
-
     setLoading(true);
 
-    const endpoint = isLogin ? "/api/auth/login" : "/api/auth/signup";
-
     try {
-      const res = await fetch(endpoint, {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone, pin, countryCode: country }),
@@ -185,10 +168,7 @@ function LoginPageContent() {
       const data = await res.json();
 
       if (!res.ok || !data.ok) {
-        setError(
-          data.error ??
-            (isLogin ? "Invalid phone or PIN." : "Failed to create account."),
-        );
+        setError(data.error ?? "Invalid phone or PIN.");
         return;
       }
 
@@ -202,12 +182,6 @@ function LoginPageContent() {
     }
   };
 
-  const switchMode = (newMode: "login" | "signup") => {
-    setMode(newMode);
-    setError("");
-    setConfirmPin("");
-  };
-
   if (success) {
     return (
       <div className="jj-login-page">
@@ -216,12 +190,10 @@ function LoginPageContent() {
             <FiCheckCircle size={32} />
           </div>
           <h2 className="jj-login-success-title !text-emerald-400">
-            {isLogin ? "You're in!" : "Account created!"}
+            You&apos;re in!
           </h2>
           <p className="jj-login-success-sub">
-            {isLogin
-              ? "Welcome back. Redirecting you to jobs…"
-              : "Welcome to job. Redirecting you to jobs…"}
+            Welcome back. Redirecting you to jobs…
           </p>
           <Link
             href="/jobs"
@@ -266,72 +238,9 @@ function LoginPageContent() {
         {/* Right panel — form */}
         <div className="jj-login-panel jj-login-panel--form">
           <div className="jj-login-form-wrap">
-            {/* Tab Switcher */}
-            <div
-              style={{
-                display: "flex",
-                background: "rgba(255,255,255,0.05)",
-                padding: "4px",
-                borderRadius: "10px",
-                marginBottom: "24px",
-                border: "1px solid rgba(255,255,255,0.08)",
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => switchMode("login")}
-                style={{
-                  flex: 1,
-                  padding: "10px",
-                  borderRadius: "7px",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  border: isLogin
-                    ? "1px solid rgba(16, 185, 129, 0.4)"
-                    : "1px solid transparent",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                  backgroundColor: isLogin
-                    ? "rgba(16, 185, 129, 0.15)"
-                    : "transparent",
-                  color: isLogin ? "#34d399" : "rgba(255,255,255,0.5)",
-                }}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => switchMode("signup")}
-                style={{
-                  flex: 1,
-                  padding: "10px",
-                  borderRadius: "7px",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  border: !isLogin
-                    ? "1px solid rgba(16, 185, 129, 0.4)"
-                    : "1px solid transparent",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                  backgroundColor: !isLogin
-                    ? "rgba(16, 185, 129, 0.15)"
-                    : "transparent",
-                  color: !isLogin ? "#34d399" : "rgba(255,255,255,0.5)",
-                }}
-              >
-                Sign Up
-              </button>
-            </div>
-
             <div className="jj-login-form-head">
-              <h2 className="!text-emerald-400">
-                {isLogin ? "Welcome back" : "Create an account"}
-              </h2>
-              <p>
-                {isLogin
-                  ? "Enter your phone number and 4-digit PIN"
-                  : "Set up your phone number and a 4-digit PIN"}
-              </p>
+              <h2 className="!text-emerald-400">Welcome back</h2>
+              <p>Enter your phone number and 4-digit PIN</p>
             </div>
 
             {error && <div className="jj-login-error">{error}</div>}
@@ -348,45 +257,26 @@ function LoginPageContent() {
               </div>
 
               <div className="jj-login-form-group">
-                <label className="jj-login-label">
-                  {isLogin ? "PIN" : "Create 4-Digit PIN"}
-                </label>
+                <label className="jj-login-label">PIN</label>
                 <PinInput
                   value={pin}
                   onChange={setPin}
-                  hint={
-                    isLogin
-                      ? "4-digit PIN from your account or *7098# subscription"
-                      : "Choose a secure 4-digit numeric PIN"
-                  }
+                  hint="4-digit PIN from your account or *7098# subscription"
                 />
               </div>
 
-              {!isLogin && (
-                <div className="jj-login-form-group">
-                  <label className="jj-login-label">Confirm 4-Digit PIN</label>
-                  <PinInput
-                    value={confirmPin}
-                    onChange={setConfirmPin}
-                    hint="Re-enter your 4-digit PIN to confirm"
-                  />
-                </div>
-              )}
-
-              {isLogin && (
-                <div className="jj-login-form-row">
-                  <label className="jj-login-checkbox">
-                    <input type="checkbox" defaultChecked />
-                    Keep me signed in
-                  </label>
-                  <Link
-                    href="/forgot-password"
-                    className="jj-login-forgot hover:!text-emerald-400"
-                  >
-                    Forgot PIN?
-                  </Link>
-                </div>
-              )}
+              <div className="jj-login-form-row">
+                <label className="jj-login-checkbox">
+                  <input type="checkbox" defaultChecked />
+                  Keep me signed in
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="jj-login-forgot hover:!text-emerald-400"
+                >
+                  Forgot PIN?
+                </Link>
+              </div>
 
               <button
                 type="submit"
@@ -395,13 +285,11 @@ function LoginPageContent() {
               >
                 {loading ? (
                   <>
-                    <span className="jj-login-spinner" />{" "}
-                    {isLogin ? "Signing in…" : "Creating account…"}
+                    <span className="jj-login-spinner" /> Signing in…
                   </>
                 ) : (
                   <>
-                    {isLogin ? "Sign in" : "Create account"}{" "}
-                    <FiArrowRight size={16} />
+                    Sign in <FiArrowRight size={16} />
                   </>
                 )}
               </button>
