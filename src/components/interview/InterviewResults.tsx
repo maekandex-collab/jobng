@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { motion,  Variants } from 'framer-motion';
 import { UserResponse } from '@/types/interview';
 import { 
   FiAward, 
@@ -10,10 +10,7 @@ import {
   FiAlertCircle, 
   FiCheckCircle, 
   FiArrowRight, 
-  FiChevronDown, 
-  FiXCircle,
   FiZap,
-  FiTarget
 } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 
@@ -29,7 +26,6 @@ export const InterviewResults: React.FC<InterviewResultsProps> = ({
   onRestart,
 }) => {
   const router = useRouter();
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   const correctCount = responses.filter((r) => r.isCorrect).length;
   const incorrectCount = responses.length - correctCount;

@@ -164,14 +164,14 @@ export default function ForgotPasswordPage() {
             <StageStepper currentStep={step} totalSteps={3} />
 
             <div className="jj-login-form-head">
-              <h2>
+              <h2 className="text-[#8DC63F]">
                 {step === 1
                   ? "Forgot your PIN?"
                   : step === 2
                   ? "Enter Verification OTP"
                   : "Update your PIN"}
               </h2>
-              <p>
+              <p>K
                 {step === 1
                   ? "Enter your registered phone number to receive an SMS OTP code."
                   : step === 2

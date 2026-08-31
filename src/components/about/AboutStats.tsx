@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import CountUp from "../shared/CountUp";
 import { authHeaders } from "@/lib/auth-client";
 
-const HARDCODED_FALLBACK_COUNT = 5000;
-
 const fetchJobsCount = async (): Promise<number> => {
   try {
     const res = await fetch("/api/total-jobs", {
@@ -18,7 +16,7 @@ const fetchJobsCount = async (): Promise<number> => {
     });
 
     if (res.status === 401 || !res.ok) {
-      return HARDCODED_FALLBACK_COUNT;
+      return;
     }
 
     const payload = await res.json();
@@ -28,9 +26,9 @@ const fetchJobsCount = async (): Promise<number> => {
 
     return typeof count === "number" && count > 0
       ? count
-      : HARDCODED_FALLBACK_COUNT;
+      : "";
   } catch {
-    return HARDCODED_FALLBACK_COUNT;
+    return;
   }
 };
 

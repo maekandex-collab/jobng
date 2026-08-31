@@ -14,8 +14,8 @@ export const metadata: Metadata = {
     "Practice job-specific interview questions powered by Maekandex Academy.",
   openGraph: {
     title: "Prep Interview",
-    description: "Master job-specific interview questions on jobNG.",
-    siteName: "jobNG",
+    description: "Master job-specific interview questions on JustJobNG.",
+    siteName: "JustJobNG",
     type: "website",
   },
 };
@@ -27,7 +27,9 @@ export default function PrepInterviewLayout({
 }) {
   return (
     <AuthProvider>
-      <div className={`${lato.variable} font-['Lato',sans-serif] w-full min-h-[calc(100vh-var(--spacing-nav-height)) flex flex-col bg-[#F8F9FA] text-[#0A0F1C]`}>
+      <div
+        className={`${lato.variable} font-['Lato',sans-serif] w-full min-h-[calc(100vh-var(--spacing-nav-height)) flex flex-col bg-[#F8F9FA] text-[#0A0F1C]`}
+      >
         {children}
       </div>
     </AuthProvider>
