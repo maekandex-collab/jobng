@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import CountUp from "../shared/CountUp";
 import { authHeaders } from "@/lib/auth-client";
 
-const fetchJobsCount = async (): Promise<number> => {
+const fetchJobsCount = async (): Promise<number | null> => {
   try {
     const res = await fetch("/api/total-jobs", {
       method: "GET",
@@ -16,19 +16,17 @@ const fetchJobsCount = async (): Promise<number> => {
     });
 
     if (res.status === 401 || !res.ok) {
-      return;
+      return null;
     }
 
     const payload = await res.json();
-    
+
     // Extract total_jobs from { ok: true, data: { total_jobs: 474 } }
     const count = payload?.data?.total_jobs ?? payload?.total_jobs;
 
-    return typeof count === "number" && count > 0
-      ? count
-      : "";
+    return typeof count === "number" && count > 0 ? count : null;
   } catch {
-    return;
+    return null;
   }
 };
 
@@ -55,7 +53,11 @@ export default function AboutStats() {
         {targetCount === null ? (
           <span className="inline-block w-20 h-8 rounded-lg bg-emerald-100/60 animate-pulse" />
         ) : (
-          <CountUp target={targetCount} suffix="+" className="inline text-[#00A651]" />
+          <CountUp
+            target={targetCount}
+            suffix="+"
+            className="inline text-[#00A651]"
+          />
         )}
       </div>
       <div className="text-slate-500 text-xs sm:text-sm font-extrabold uppercase tracking-widest">
