@@ -13,7 +13,7 @@ const steps = [
     iconGlow: "group-hover:shadow-[0_10px_30px_rgba(217,119,6,0.2)",
     iconBg:
       "bg-linear-to-br from-amber-50 to-amber-100/80 text-amber-600 border-amber-200",
-    desc: "Dial *7098# on any phone to register on JustJobNG. Create your profile, upload your CV, and set your career preferences in seconds.",
+    desc: "Dial *7098# on any phone to register on JustJobNG. Then go on to login on the website",
   },
   {
     icon: FiFileText,
