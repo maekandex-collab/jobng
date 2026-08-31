@@ -1,4 +1,16 @@
 import { API_BASE_URL } from "./config";
+import { Question, JobRole } from "@/types/interview";
+import { fetchWithAuth, getStoredToken, notifyUnauthorized } from "@/lib/auth-client";
+
+interface ApiQuestion {
+  question: string;
+  options: string[];
+  answer: number;
+}
+
+interface ProxyResponse {
+  questions: ApiQuestion[];
+}
 
 export interface Apijustjob {
   job_id: string;
@@ -52,52 +64,23 @@ export interface GetTotalJobsResponse {
   message?: string;
 }
 
-
-/**
- * Backend job routes expect Bearer AND a session cookie shaped like
- *   <user_id>="{\"session_id\":\"…\",\"access_token\":\"…\"}"
- * The cookie is set on mtn.lenhub.net at login, so our Next.js BFF never
- * receives it — rebuild it from the JWT payload instead.
- */
-export function justjobAuthHeaders(token?: string): Record<string, string> {
-  if (!token) return {};
-
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${token}`,
-  };
-
-  try {
-    const parts = token.split(".");
-    if (parts.length < 2) return headers;
-    const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
-    const payload = JSON.parse(
-      Buffer.from(padded, "base64").toString("utf-8")
-    ) as { user_id?: string; session_id?: string };
-
-    if (payload.user_id && payload.session_id) {
-      const body = JSON.stringify({
-        session_id: payload.session_id,
-        access_token: token,
-      });
-      headers.Cookie = `${payload.user_id}=${JSON.stringify(body)}`;
-    }
-  } catch {
-    // Bearer-only fallback; some endpoints still accept it.
-  }
-
-  return headers;
+export function extractItems(data: Record<string, unknown>): Apijustjob[] {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.items)) return data.items;
+  if (data && Array.isArray(data.data)) return data.data;
+  if (data && Array.isArray(data.results)) return data.results;
+  return [];
 }
 
 export function extractError(
   data: Record<string, unknown> | null | undefined | unknown,
-  fallback = "Something went wrong. Please try again."
+  fallback = "Something went wrong. Please try again.",
 ): string {
   if (!data || typeof data !== "object") return fallback;
 
   const record = data as Record<string, unknown>;
 
-  // 1. Direct string properties (Express, NestJS, Custom APIs)
+  // 1. Direct string properties
   if (typeof record.detail === "string") return record.detail;
   if (typeof record.error === "string") return record.error;
   if (typeof record.message === "string") return record.message;
@@ -106,12 +89,17 @@ export function extractError(
   if (Array.isArray(record.detail) && record.detail.length > 0) {
     const first = record.detail[0];
     if (typeof first === "string") return first;
-    if (typeof first === "object" && first !== null && "msg" in first && typeof first.msg === "string") {
+    if (
+      typeof first === "object" &&
+      first !== null &&
+      "msg" in first &&
+      typeof first.msg === "string"
+    ) {
       return first.msg;
     }
   }
 
-  // 3. Field validation object maps (e.g., Django REST: { phone: ["Invalid number"] })
+  // 3. Field validation object maps
   for (const value of Object.values(record)) {
     if (typeof value === "string" && value.trim()) {
       return value;
@@ -137,7 +125,6 @@ export function extractToken(data: unknown): string | null {
 
   const record = data as Record<string, unknown>;
 
-  // Priority token key names across standard API responses
   const tokenKeys = [
     "access",
     "access_token",
@@ -148,7 +135,6 @@ export function extractToken(data: unknown): string | null {
     "key",
   ];
 
-  // 1. Top-level property extraction
   for (const key of tokenKeys) {
     const value = record[key];
     if (typeof value === "string" && value.trim()) {
@@ -156,7 +142,6 @@ export function extractToken(data: unknown): string | null {
     }
   }
 
-  // 2. Nested API wrapper inspection (e.g. response.data or response.auth)
   const wrapperKeys = ["data", "auth", "result", "tokens", "payload"];
   for (const wrapperKey of wrapperKeys) {
     const nested = record[wrapperKey];
@@ -169,14 +154,68 @@ export function extractToken(data: unknown): string | null {
   return null;
 }
 
-/**
- * Removes "Bearer " prefix and surrounding whitespace if present.
- */
 function sanitizeToken(token: string): string {
-  return token.trim().replace(/^Bearer\s+/i, "").trim();
+  return token
+    .trim()
+    .replace(/^Bearer\s+/i, "")
+    .trim();
 }
 
-async function parseJson<T = Record<string, unknown>>(res: Response): Promise<T> {
+/**
+ * Helper to build headers with automatic Auth token injection
+ */
+/**
+ * Upstream justjob list/detail expect Bearer AND a session cookie:
+ *   <user_id>="{\"session_id\":\"…\",\"access_token\":\"…\"}"
+ * Login sets that cookie on mtn.lenhub.net, which the Next.js BFF never
+ * receives — rebuild it from the JWT so /api/jobs stops returning empty.
+ */
+function buildAuthHeaders(
+  token?: string,
+  extraHeaders: Record<string, string> = {},
+): Record<string, string> {
+  const activeToken = token || getStoredToken();
+  const headers: Record<string, string> = { ...extraHeaders };
+  if (!activeToken) return headers;
+
+  headers.Authorization = `Bearer ${activeToken}`;
+
+  try {
+    const parts = activeToken.split(".");
+    if (parts.length >= 2) {
+      const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+      const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+      const payload = JSON.parse(
+        Buffer.from(padded, "base64").toString("utf-8"),
+      ) as { user_id?: string; session_id?: string };
+
+      if (payload.user_id && payload.session_id) {
+        const body = JSON.stringify({
+          session_id: payload.session_id,
+          access_token: activeToken,
+        });
+        headers.Cookie = `${payload.user_id}=${JSON.stringify(body)}`;
+      }
+    }
+  } catch {
+    // Bearer-only fallback
+  }
+
+  return headers;
+}
+
+/**
+ * Helper to check 401 status and trigger local storage purging + re-login
+ */
+function checkUnauthorized(status: number): void {
+  if (status === 401) {
+    notifyUnauthorized();
+  }
+}
+
+async function parseJson<T = Record<string, unknown>>(
+  res: Response,
+): Promise<T> {
   const text = await res.text();
   try {
     const data = JSON.parse(text);
@@ -185,7 +224,9 @@ async function parseJson<T = Record<string, unknown>>(res: Response): Promise<T>
     }
     return data as T;
   } catch {
-    return { message: text || res.statusText || "An unexpected error occurred" } as unknown as T;
+    return {
+      message: text || res.statusText || "An unexpected error occurred",
+    } as unknown as T;
   }
 }
 
@@ -194,30 +235,38 @@ export async function registerUser(body: {
   pin: string;
   confirm_pin: string;
 }): Promise<ApiResult<AuthSuccessData>> {
-  const res = await fetch(`${API_BASE_URL}/api/justjob/create/user/`, {
+  const res = await fetchWithAuth(`${API_BASE_URL}/api/justjob/create/user/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  return { ok: res.ok, status: res.status, data: await parseJson<AuthSuccessData>(res) };
+  return {
+    ok: res.ok,
+    status: res.status,
+    data: await parseJson<AuthSuccessData>(res),
+  };
 }
 
 export async function loginUser(body: {
   number: string;
   pin: string;
 }): Promise<ApiResult<AuthSuccessData>> {
-  const res = await fetch(`${API_BASE_URL}/api/justjob/login/user/`, {
+  const res = await fetchWithAuth(`${API_BASE_URL}/api/justjob/login/user/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  return { ok: res.ok, status: res.status, data: await parseJson<AuthSuccessData>(res) };
+  return {
+    ok: res.ok,
+    status: res.status,
+    data: await parseJson<AuthSuccessData>(res),
+  };
 }
 
 export async function forgotPassword(body: {
   phone_number: string;
 }): Promise<ApiResult> {
-  const res = await fetch(`${API_BASE_URL}/api/justjob/forgot/password/`, {
+  const res = await fetchWithAuth(`${API_BASE_URL}/api/justjob/forgot/password/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -227,16 +276,18 @@ export async function forgotPassword(body: {
 
 export async function changePassword(
   body: { new_pin: string; old_pin: string },
-  token?: string
+  token?: string,
 ): Promise<ApiResult> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) headers.Authorization = `Bearer ${token}`;
+  const headers = buildAuthHeaders(token, { "Content-Type": "application/json" });
 
-  const res = await fetch(`${API_BASE_URL}/api/justjob/change/password/`, {
+  const res = await fetchWithAuth(`${API_BASE_URL}/api/justjob/change/password/`, {
     method: "POST",
     headers,
     body: JSON.stringify(body),
   });
+
+  checkUnauthorized(res.status);
+
   return { ok: res.ok, status: res.status, data: await parseJson(res) };
 }
 
@@ -244,7 +295,7 @@ export async function resetPassword(body: {
   phone_number: string;
   pin: string;
 }): Promise<ApiResult> {
-  const res = await fetch(`${API_BASE_URL}/api/justjob/reset/password/`, {
+  const res = await fetchWithAuth(`${API_BASE_URL}/api/justjob/reset/password/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -261,7 +312,7 @@ export async function updatePassword({
   pin: string;
   confirm_pin: string;
 }): Promise<UpdateApiResult> {
-  const res = await fetch(`${API_BASE_URL}/api/justjob/update/password/`, {
+  const res = await fetchWithAuth(`${API_BASE_URL}/api/justjob/update/password/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ number, pin, confirm_pin }),
@@ -269,7 +320,9 @@ export async function updatePassword({
 
   const data = await parseJson(res);
   const message = res.ok
-    ? (data.message as string) || (data.detail as string) || "PIN updated successfully."
+    ? (data.message as string) ||
+      (data.detail as string) ||
+      "PIN updated successfully."
     : extractError(data);
 
   return {
@@ -281,7 +334,7 @@ export async function updatePassword({
 
 export async function getTotalJobs(): Promise<GetTotalJobsResponse> {
   try {
-    const result = await fetch(`${API_BASE_URL}/api/justjob/total_jobs`, {
+    const result = await fetchWithAuth(`${API_BASE_URL}/api/justjob/total_jobs`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
     });
@@ -301,8 +354,8 @@ export async function getTotalJobs(): Promise<GetTotalJobsResponse> {
       typeof rawTotalJobs === "number"
         ? rawTotalJobs
         : typeof rawTotalJobs === "string"
-        ? parseInt(rawTotalJobs, 10) || 0
-        : 0;
+          ? parseInt(rawTotalJobs, 10) || 0
+          : 0;
 
     const rawAreaService = data["Area service"];
     const areaServiceString =
@@ -321,14 +374,22 @@ export async function getTotalJobs(): Promise<GetTotalJobsResponse> {
     return {
       ok: false,
       status: 500,
-      message: error instanceof Error ? error.message : "An unexpected network error occurred.",
+      message:
+        error instanceof Error
+          ? error.message
+          : "An unexpected network error occurred.",
     };
   }
 }
 
 export async function getJobs(
-  params: { search?: string; category?: string; page?: number; page_size?: number },
-  token?: string
+  params: {
+    search?: string;
+    category?: string;
+    page?: number;
+    page_size?: number;
+  },
+  token?: string,
 ): Promise<ApiResult<PagedJobsResponse>> {
   const qs = new URLSearchParams();
   if (params.search) qs.set("search", params.search);
@@ -336,28 +397,25 @@ export async function getJobs(
   if (params.page) qs.set("page", String(params.page));
   if (params.page_size) qs.set("page_size", String(params.page_size));
 
-  const headers = justjobAuthHeaders(token);
+  const headers = buildAuthHeaders(token);
 
   try {
-    const res = await fetch(
+    const res = await fetchWithAuth(
       `${API_BASE_URL}/api/justjob/jobs/${qs.toString() ? `?${qs.toString()}` : ""}`,
-      { headers, cache: "no-store" }
+      { headers, cache: "no-store" },
     );
 
-    const rawData = await parseJson<Record<string, unknown>>(res);
+    checkUnauthorized(res.status);
 
-    const items = Array.isArray(rawData.items)
-      ? (rawData.items as Apijustjob[])
-      : Array.isArray(rawData)
-      ? (rawData as Apijustjob[])
-      : [];
+    const rawData = await parseJson<Record<string, unknown>>(res);
+    const items = extractItems(rawData);
 
     const count =
       typeof rawData.count === "number"
         ? rawData.count
         : typeof rawData.total === "number"
-        ? rawData.total
-        : items.length;
+          ? rawData.total
+          : items.length;
 
     const data: PagedJobsResponse = { items, count };
 
@@ -375,7 +433,7 @@ export async function getJobs(
 
 export async function getSingleJob(
   justjobId: string,
-  token?: string
+  token?: string,
 ): Promise<ApiResult<Apijustjob | null>> {
   if (!justjobId) {
     return { ok: false, status: 400, data: null };
@@ -384,13 +442,15 @@ export async function getSingleJob(
   const qs = new URLSearchParams();
   qs.set("job_id", justjobId);
 
-  const headers = justjobAuthHeaders(token);
+  const headers = buildAuthHeaders(token);
 
   try {
-    const res = await fetch(
+    const res = await fetchWithAuth(
       `${API_BASE_URL}/api/justjob/single/job/?${qs.toString()}`,
-      { headers, cache: "no-store" }
+      { headers, next: {revalidate: 60} },
     );
+
+    checkUnauthorized(res.status);
 
     const rawData = await parseJson(res);
 
@@ -404,11 +464,23 @@ export async function getSingleJob(
 
     let unwrappedJob: Record<string, unknown> = rawData;
     if (rawData && typeof rawData === "object") {
-      if ("data" in rawData && rawData.data && typeof rawData.data === "object") {
+      if (
+        "data" in rawData &&
+        rawData.data &&
+        typeof rawData.data === "object"
+      ) {
         unwrappedJob = rawData.data as Record<string, unknown>;
-      } else if ("job" in rawData && rawData.job && typeof rawData.job === "object") {
+      } else if (
+        "job" in rawData &&
+        rawData.job &&
+        typeof rawData.job === "object"
+      ) {
         unwrappedJob = rawData.job as Record<string, unknown>;
-      } else if ("items" in rawData && Array.isArray(rawData.items) && rawData.items.length > 0) {
+      } else if (
+        "items" in rawData &&
+        Array.isArray(rawData.items) &&
+        rawData.items.length > 0
+      ) {
         unwrappedJob = rawData.items[0];
       }
     }
@@ -425,5 +497,59 @@ export async function getSingleJob(
       status: 500,
       data: null,
     };
+  }
+}
+
+export async function fetchQuestionsFromApi(
+  category: JobRole | string,
+  number: number,
+  token?: string
+): Promise<Question[]> {
+  const headers = buildAuthHeaders(token, { "Content-Type": "application/json" });
+
+  try {
+    const url = `${API_BASE_URL}/api/maekandex/academy?number=${number}&category=${encodeURIComponent(category)}`;
+    const response = await fetchWithAuth(url, {
+      method: "GET",
+      headers,
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      checkUnauthorized(response.status);
+
+      const errorText = await response.text().catch(() => "");
+      console.error(`API Error (${response.status}): ${errorText || response.statusText}`);
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error("Unauthorized access. Token expired or invalid. Redirecting to login...");
+      } else if (response.status === 404) {
+        throw new Error("We couldn't find any questions for this category.");
+      } else if (response.status >= 500) {
+        throw new Error("We are currently experiencing issues. Please try again later.");
+      } else {
+        throw new Error("Unable to load questions right now.");
+      }
+    }
+
+    const data: ProxyResponse = await response.json();
+
+    if (!data || !Array.isArray(data.questions)) {
+      console.error('Invalid response structure: "questions" array was not returned.', data);
+      throw new Error("Questions are not available for this.");
+    }
+
+    return data.questions.map((q, index) => ({
+      id: `q-${Date.now()}-${index}`,
+      category: category,
+      jobRole: category as JobRole,
+      questionText: q.question,
+      options: q.options,
+      correctOptionIndex: q.answer,
+    }));
+  } catch (error) {
+    console.error("Error fetching questions:", error);
+    if (error instanceof Error) throw error;
+    throw new Error("Unable to connect. Please check your internet connection.");
   }
 }
