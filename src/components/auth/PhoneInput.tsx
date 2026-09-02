@@ -88,7 +88,7 @@ export function PhoneInput({
           }}
           placeholder="806 000 0000"
           maxLength={10}
-          className="jj-login-field__input font-mono"
+          className="!text-gray-700 jj-login-field__input font-mono"
         />
       </div>
     </div>

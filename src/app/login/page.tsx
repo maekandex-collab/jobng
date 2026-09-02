@@ -25,7 +25,7 @@ const countryCodes = [
   { code: "+254", flag: "🇰🇪", name: "KE" },
 ];
 
-function PhoneInput({
+export function PhoneInput({
   value,
   onChange,
   countryCode,
@@ -218,7 +218,7 @@ function LoginPageContent() {
             <h1 className="jj-login-panel__title">
               Find your next Job
               <br />
-              <span className="!text-emerald-400">in Nigeria.</span>
+              <span className="!text-white">in Nigeria.</span>
             </h1>
             <p className="jj-login-panel__sub">
               Access curated jobs using your phone number and 4-digit PIN, or

@@ -4,13 +4,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, type Variants } from "framer-motion";
-import {
-  FiInstagram,
-  FiLinkedin,
-  FiFacebook,
-  FiArrowUpRight,
-  FiPhoneCall,
-} from "react-icons/fi";
+import { FiArrowUpRight, FiPhoneCall } from "react-icons/fi";
 import Logo from "@/components/brand/Logo";
 
 const FOOTER_LINKS = {
@@ -117,7 +111,29 @@ export default function Footer() {
               </div>
             </div>
           </motion.div>
-
+          {/* Explore Links Column */}
+          <motion.div variants={itemVariants} className="lg:col-span-3">
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-ink/90 mb-5 flex items-center gap-2">
+              Explore
+              <span className="w-8 h-[2px] bg-[#055A2B]/40 rounded-full inline-block" />
+            </h3>
+            <ul className="flex flex-col gap-2.5 p-0 m-0 list-none">
+              {FOOTER_LINKS.explore.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="group inline-flex items-center gap-1.5 text-[15px] text-ink/80 font-medium no-underline py-1 transition-all duration-200 hover:text-white hover:translate-x-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-ink/50 rounded-xs"
+                  >
+                    <span>{link.label}</span>
+                    <FiArrowUpRight
+                      size={14}
+                      className="opacity-0 -translate-x-1 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0"
+                    />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
           {/* Company Links Column */}
           <motion.div variants={itemVariants} className="lg:col-span-4">
             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-ink/90 mb-5 flex items-center gap-2">
@@ -156,22 +172,6 @@ export default function Footer() {
           <p className="text-xs sm:text-sm text-ink/80 m-0 text-center sm:text-left font-medium">
             &copy; {year ?? "2026"} JustJobNG. All rights reserved.
           </p>
-
-          {/* Social Links */}
-          <div className="flex items-center gap-2.5">
-            {SOCIAL_LINKS.map(({ icon: Icon, href, label }) => (
-              <a
-                key={label}
-                href={href}
-                aria-label={label}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/10 text-ink/90 border border-white/20 transition-all duration-300 hover:bg-[#055A2B] hover:text-white hover:border-[#055A2B] hover:-translate-y-1 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ink/50"
-              >
-                <Icon size={16} />
-              </a>
-            ))}
-          </div>
         </div>
       </motion.div>
     </footer>
