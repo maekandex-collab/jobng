@@ -25,7 +25,8 @@ const countryCodes = [
   { code: "+254", flag: "🇰🇪", name: "KE" },
 ];
 
-export function PhoneInput({
+/** Local to this page — must not be a named export (Next.js page type check). */
+function PhoneInput({
   value,
   onChange,
   countryCode,
